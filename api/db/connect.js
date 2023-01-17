@@ -15,20 +15,29 @@ client.connect();
 
 //Queries stored as var and passed into functions instead of string to avoid sql injection vulnerability.
 
-const getUsers = (req, res) => {
-    selectUsers = `SELECT * FROM userstest`
-    rows;
-    
-    client.query(selectUsers, (err, res) => {
+// const testFunc = (req,res) => {
+//     res.status(200).json({ success: true })
+// }
+
+// Note: title is not defined showing up because rows was not initialized.
+// const getUsers = (req, res, next) => {
+function getUsers(req, res, next) {
+    const selectUsers = {
+        text: `SELECT * FROM userstest`,
+        rowMode: `array`
+    }
+    rows = client.query(selectUsers, (err, res) => {
         if(!err){
             console.log(res.rows)
-            rows = res.rows
+            return res.rows
+            // console.log(rows)
         } else {
             console.log(err.message)
         }
         client.end()
     })
-    res.status(200).send(rows)
+    console.log(rows)
+    res.status(200).json({ rows })
 }
 
 const getUserById = (req) => {
@@ -47,5 +56,6 @@ const getUserById = (req) => {
 //module.exports = client;
 module.exports = {
     getUsers,
-    getUserById
+    getUserById,
+    // testFunc
 }
