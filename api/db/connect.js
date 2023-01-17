@@ -15,17 +15,20 @@ client.connect();
 
 //Queries stored as var and passed into functions instead of string to avoid sql injection vulnerability.
 
-const getUsers = (req) => {
+const getUsers = (req, res) => {
     selectUsers = `SELECT * FROM userstest`
+    rows;
+    
     client.query(selectUsers, (err, res) => {
         if(!err){
             console.log(res.rows)
-            return res.status(200).json({ users: res.rows })
+            rows = res.rows
         } else {
             console.log(err.message)
         }
         client.end()
     })
+    res.status(200).send(rows)
 }
 
 const getUserById = (req) => {
