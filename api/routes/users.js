@@ -4,7 +4,7 @@ var router = express.Router();
 const {
   getUsers,
   getUserById
-} = require('../db/db-user-interface.js');
+} = require('../db/db-user-interface');
 
 /* GET users listing. */
 // router.get('/', function(req, res, next) {
