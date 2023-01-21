@@ -16,36 +16,36 @@ client.connect();
 //Queries stored as var and passed into functions instead of string to avoid sql injection vulnerability.
 
 // const testFunc = (req,res) => {
-//     res.status(200).json({ success: true })
-// }
-
-// Note: title is not defined showing up because rows was not initialized.
-// const getUsers = (req, res, next) => {
+    //     res.status(200).json({ success: true })
+    // }
+    
+    // Note: 'title is not defined' error due to rows not initialized.
+    // const getUsers = (req, res, next) => {
 function getUsers(req, res, next) {
     const selectUsers = {
         text: `SELECT * FROM userstest`,
-        rowMode: `array`
+        // rowMode: `array`
     }
-    rows = client.query(selectUsers, (err, res) => {
+    client.query(selectUsers, (err, result) => {
+        // client.connect()
         if(!err){
-            console.log(res.rows)
-            return res.rows
-            // console.log(rows)
+            // console.log(result.rows)
+            res.status(200).send(result.rows)
         } else {
             console.log(err.message)
         }
         client.end()
     })
-    console.log(rows)
-    res.status(200).json({ rows })
 }
 
-const getUserById = (req) => {
-    selectUserById = `SELECT * FROM userstest WHERE userid=${req.params.id}`
-    client.query(selectUserById, (err, res) => {
+// const getUserById = (req) => {
+function getUserById(req, res, next) {
+    const selectUserById = `SELECT * FROM userstest WHERE userid=${req.params.id}`
+    client.query(selectUserById, (err, result) => {
+        // client.connect()
         if(!err){
-            console.log(res.rows)
-            res.status(200).json({ user: res.rows })
+            console.log(result.rows)
+            res.status(200).send(result.rows)
         } else {
             console.log(err.message)
         }
