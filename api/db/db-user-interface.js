@@ -13,31 +13,44 @@ function getUsers(req, res, next) {
       text: `SELECT * FROM userstest`,
       // rowMode: `array`
   };
+  executeQuery(selectUsers, res);
 
-  pool.connect();
-  pool.query(selectUsers, (err, result) => {
-    if (!err) {
-      console.log(result.rows)
-      res.status(200).send(result.rows)
-    } else {
-      console.log(err.message)
-    }
-  })
+  // using promises
+  // ;(async function () {
+  //   const client = await pool.connect()
+  //   await client.query(selectUsers)
+  //   client.release()
+  // })()
 }
   
 // const getUserById = (req) => {
 function getUserById(req, res, next) {
   const selectUserById = `SELECT * FROM userstest WHERE userid=${req.params.id}`;
+  executeQuery(selectUserById, res);
+}
 
-  pool.connect();
-  pool.query(selectUserById, (err, result) => {
-    if (!err) {
-      // console.log(result.rows)
-      res.status(200).send(result.rows)
-    } else {
-      console.log(err.message)
+function executeQuery(query, res) {
+  pool.connect((err, client, release) => {
+    if (err) {
+      return console.error('Error acquiring client', err.stack);
     }
+    client.query(query, (err, result) => {
+      release();
+      if (err) {
+        return console.error('Error executing query', err.stack);
+      }
+      console.log(result.rows);
+      res.status(200).send(result.rows);
+    })
   })
+  // Cannot call pool.end more than once. Would have to create an entirely new pool...
+  // pool.end((err) => {
+  //   console.log('client has disconnected');
+  //   // res.status(200).send('client has disconnected');
+  //   if (err) {
+  //     console.log('error during disconnection', err.stack);
+  //   }
+  // })
 }
   
   // function createAnnouncement()
