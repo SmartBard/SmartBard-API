@@ -4,6 +4,7 @@ const cookieParser = require('cookie-parser');
 const logger = require('morgan');
 
 const indexRouter = require('./routes/index');
+const announcementsRouter = require('./routes/announcements');
 
 const app = express();
 const port = process.env['NODE_PORT'] || 3000;
@@ -14,6 +15,7 @@ app.use(express.urlencoded({ extended: false }));
 app.use(cookieParser());
 
 app.use('/', indexRouter);
+app.use('/announcements', announcementsRouter);
 
 // catch 404 and forward to error handler
 app.use(function(req, res, next) {
