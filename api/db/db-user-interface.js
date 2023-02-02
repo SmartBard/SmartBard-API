@@ -1,17 +1,23 @@
 // controller for db user table functions
 // Note: Queries stored as var and passed into functions instead of string to avoid sql injection vulnerability.
 // Note: 'title is not defined' error due to rows (or some var) not initialized.
+var types = require('pg').types;
+const { executeQuery }  = require('./connect');
+// types.arrayParser
+// parsePointArray
+//  types.setTypeParser(20, function(val) {
+//   return array.parse(val, parsePoint);
+// })
 
-const { 
-  executeQuery
- }  = require('./connect');
-
-function getUsers(req, res, next) {
+function getUsers() {
   const selectUsers = {
       text: `SELECT * FROM userstest`,
+      // types: {
+      //   getTypeParser: () => val => val,
+      // }
       // rowMode: `array`
   };
-  executeQuery(selectUsers, res);
+  executeQuery(selectUsers);
 
   // using promises
   // ;(async function () {
@@ -21,9 +27,9 @@ function getUsers(req, res, next) {
   // })()
 }
 
-function getUserById(req, res, next) {
+function getUserById(req, next) {
   const selectUserById = `SELECT * FROM userstest WHERE userid=${req.params.id}`;
-  executeQuery(selectUserById, res);
+  executeQuery(selectUserById);
 }
   
 // function logUserActivity()...
