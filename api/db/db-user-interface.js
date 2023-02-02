@@ -11,27 +11,22 @@ const { executeQuery }  = require('./connect');
 
 function getUsers() {
   const selectUsers = {
-      text: `SELECT * FROM userstest`,
+    text: `SELECT * FROM userstest`,
+    // text: `SELECT json_agg(userstest) FROM userstest`,
+    // text: `SELECT row_to_json(userstest) FROM userstest`,
       // types: {
       //   getTypeParser: () => val => val,
       // }
       // rowMode: `array`
   };
   executeQuery(selectUsers);
-
-  // using promises
-  // ;(async function () {
-  //   const client = await pool.connect()
-  //   await client.query(selectUsers)
-  //   client.release()
-  // })()
 }
 
 function getUserById(req, next) {
   const selectUserById = `SELECT * FROM userstest WHERE userid=${req.params.id}`;
   executeQuery(selectUserById);
 }
-  
+
 // function logUserActivity()...
 
 module.exports = {

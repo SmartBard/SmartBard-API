@@ -7,6 +7,7 @@ var logger = require('morgan');
 var indexRouter = require('./routes/index');
 var usersRouter = require('./routes/users');
 var tempRouter = require('./routes/temp');
+const { hi } = require('./db/connect');
 const {
   getUsers,
   getUserById
@@ -29,7 +30,15 @@ app.use('/users', usersRouter);
 app.use('/end', tempRouter)
 
 // const usersResults = getUsers();
-getUsers();
+// (async function () {
+//   // await console.log(getUsers());
+//   console.log(hi());
+// })()
+
+// var r = getUsers();
+// console.log(r);
+// console.log(getUsers());
+console.log(hi());
 // console.log(usersResults);
 
 // catch 404 and forward to error handler
