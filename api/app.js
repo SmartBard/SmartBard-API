@@ -29,17 +29,11 @@ app.use('/', indexRouter);
 app.use('/users', usersRouter);
 app.use('/end', tempRouter)
 
-// const usersResults = getUsers();
-// (async function () {
-//   // await console.log(getUsers());
-//   console.log(hi());
-// })()
 
-// var r = getUsers();
-// console.log(r);
-// console.log(getUsers());
-console.log(hi());
-// console.log(usersResults);
+getUsers().then((res) => {
+  console.log(res.rows);
+});
+// console.log(hi());
 
 // catch 404 and forward to error handler
 app.use(function(req, res, next) {

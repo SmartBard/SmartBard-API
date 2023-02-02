@@ -20,45 +20,29 @@ function hi() {
 }
 
 async function executeQuery(queryString) {
-  var r = 10;
-
-  // using callback
-  // pool.connect((err, client, release) => {
-  //   if (err) {
-  //     return console.error('Error acquiring client', err.stack);
-  //   }
-  //   client.query(queryString, (err, result) => {
-  //     release();
-  //     if (err) {
-  //       return console.error('Error executing String', err.stack);
-  //     }
-  //     console.log(result.rows);
-  //     // console.log(JSON.parse(result.rows[0]));
-  //     // res.status(200).send(result.rows);
-  //     r = result.rows;
-  //   })
-  // })
+  // Is it bad practice to store results in var instead of const?
+  // Or return within try block...
+  var res;
 
   // using async
   try {
     const client = await pool.connect();
-    r = await client.query(queryString);
-    console.log(r.rows);
-    client.release();
+    res = await client.query(queryString);
+    await client.release();
   } catch (error) {
     console.log(error);
   }
-  console.log(r);
-  return r;
-
+  // console.log(res.rows);
+  
   // Cannot call pool.end more than once. Would have to create an entirely new pool...
   // pool.end((err) => {
     //   console.log('client has disconnected');
     //   // res.status(200).send('client has disconnected');
     //   if (err) {
-    //     console.log('error during disconnection', err.stack);
-    //   }
-    // })
+      //     console.log('error during disconnection', err.stack);
+      //   }
+      // })
+  return res;
 }
     
 function endConnection(req, res, next) {

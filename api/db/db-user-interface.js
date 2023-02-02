@@ -9,7 +9,7 @@ const { executeQuery }  = require('./connect');
 //   return array.parse(val, parsePoint);
 // })
 
-function getUsers() {
+async function getUsers() {
   const selectUsers = {
     text: `SELECT * FROM userstest`,
     // text: `SELECT json_agg(userstest) FROM userstest`,
@@ -19,9 +19,12 @@ function getUsers() {
       // }
       // rowMode: `array`
   };
-  executeQuery(selectUsers);
+
+  return await executeQuery(selectUsers);
 }
 
+// investigate pg-promise library arg processing to avoid SQL injection
+// await db.any(SELECT * FROM table WHERE $1 and $2, [1, 10])
 function getUserById(req, next) {
   const selectUserById = `SELECT * FROM userstest WHERE userid=${req.params.id}`;
   executeQuery(selectUserById);

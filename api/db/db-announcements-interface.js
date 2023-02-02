@@ -4,9 +4,9 @@ const {
     executeQuery
 } = require('./connect');
 
-function getAnnouncements(req, res, next) {
+function getAnnouncements(req, next) {
     const selectUserById = `SELECT * FROM announcementstest`;
-    executeQuery(selectUserById, res);
+    executeQuery(selectUserById);
   }
     
     // function createAnnouncement()
