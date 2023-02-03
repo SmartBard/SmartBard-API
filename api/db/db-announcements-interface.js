@@ -1,5 +1,3 @@
-// controller for db announcement table functions
-
 const {
     executeQuery
 } = require('./connect');
@@ -23,12 +21,19 @@ async function createAnnouncement(columns, values) {
 // 4. general exception: strings have to be encased in double quotes e.g. "'APPROVED'"
 async function updateAnnouncement(column, newValue, id) {
     const update = `UPDATE announcementstest SET ${column} = ${newValue} WHERE announcementid = ${id}`;
-    console.log(update);
     return await executeQuery(update);
+}
+
+// returns last change time and last change user when provided with id
+// Could call this when user makes a change. How to track changes, event listener?
+async function getUserActivity(id) {
+    const getDateChanged = `SELECT last_change_time, last_change_user FROM announcementstest WHERE userid=${id}`;
+    return await executeQuery(getDateChanged);  
 }
 
 module.exports = {
     getAnnouncements,
     createAnnouncement,
-    updateAnnouncement
+    updateAnnouncement,
+    getUserActivity
 };

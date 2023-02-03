@@ -1,4 +1,3 @@
-// controller for db user table functions
 // Note: 'title is not defined' error due to rows (or some var) not initialized.
 
 var types = require('pg').types;
@@ -14,12 +13,10 @@ async function getUsers() {
 
 // investigate pg-promise library arg processing to avoid SQL injection
 // await db.any(SELECT * FROM table WHERE $1 and $2, [1, 10])
-async function getUserById(id, next) {
+async function getUserById(id) {
   const selectUserById = `SELECT * FROM userstest WHERE userid=${id}`;
   return await executeQuery(selectUserById);
 }
-
-// function logUserActivity()...
 
 module.exports = {
   getUsers,
