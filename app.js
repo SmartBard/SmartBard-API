@@ -18,6 +18,7 @@ const {
 } = require('./db/db-announcements-interface');
 
 var app = express();
+const port = process.env['NODE_PORT'] || 3000;
 
 app.use(logger('dev'));
 app.use(express.json());
