@@ -24,7 +24,6 @@ async function executeQuery(queryString) {
   // Or return within try block...
   var res;
 
-  // using async
   try {
     const client = await pool.connect();
     res = await client.query(queryString);

@@ -33,6 +33,9 @@ app.use('/end', tempRouter)
 getUsers().then((res) => {
   console.log(res.rows);
 });
+getUserById(2).then((res) => {
+  console.log(res.rows);
+});
 // console.log(hi());
 
 // catch 404 and forward to error handler

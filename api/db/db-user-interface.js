@@ -25,9 +25,10 @@ async function getUsers() {
 
 // investigate pg-promise library arg processing to avoid SQL injection
 // await db.any(SELECT * FROM table WHERE $1 and $2, [1, 10])
-function getUserById(req, next) {
-  const selectUserById = `SELECT * FROM userstest WHERE userid=${req.params.id}`;
-  executeQuery(selectUserById);
+async function getUserById(id, next) {
+  // const selectUserById = `SELECT * FROM userstest WHERE userid=${req.params.id}`;
+  const selectUserById = `SELECT * FROM userstest WHERE userid=${id}`;
+  return await executeQuery(selectUserById);
 }
 
 // function logUserActivity()...

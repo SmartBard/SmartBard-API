@@ -4,14 +4,18 @@ const {
     executeQuery
 } = require('./connect');
 
-function getAnnouncements(req, next) {
+async function getAnnouncements() {
     const selectUserById = `SELECT * FROM announcementstest`;
-    executeQuery(selectUserById);
+    return await executeQuery(selectUserById);
   }
     
-    // function createAnnouncement()
-    // INSERT INTO
-    
+// pg-promise might have functionality for inserting into a table
+// for now, pass two arrays? Or use a map with key value pair?
+async function createAnnouncement() {
+    const insert = `INSERT INTO announcementstest (${fields}) VALUES (${values})`;
+    return await executeQuery(insert);
+}
+
     // function updateAnnouncement()
     // command to edit data in tables?
 
