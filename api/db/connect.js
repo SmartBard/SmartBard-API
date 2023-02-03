@@ -15,10 +15,6 @@ const pool = new Pool({
   connectionTimeoutMillis: 2000,
 });
 
-function hi() {
-  return "Hello";
-}
-
 async function executeQuery(queryString) {
   // Is it bad practice to store results in var instead of const?
   // Or return within try block...
@@ -29,7 +25,7 @@ async function executeQuery(queryString) {
     res = await client.query(queryString);
     await client.release();
   } catch (error) {
-    console.log(error);
+    console.log(error); 
   }
   // console.log(res.rows);
   
@@ -59,6 +55,5 @@ function endConnection(req, res, next) {
 module.exports = {
   pool,
   executeQuery,
-  endConnection,
-  hi
+  endConnection
 };

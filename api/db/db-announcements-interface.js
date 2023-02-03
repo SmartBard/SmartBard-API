@@ -10,15 +10,25 @@ async function getAnnouncements() {
   }
     
 // pg-promise might have functionality for inserting into a table
-// for now, pass two arrays? Or use a map with key value pair?
-async function createAnnouncement() {
-    const insert = `INSERT INTO announcementstest (${fields}) VALUES (${values})`;
+// for now, pass two strings? Or use a map with key value pair?
+async function createAnnouncement(columns, values) {
+    const insert = `INSERT INTO announcementstest (${columns}) VALUES (${values})`;
     return await executeQuery(insert);
 }
 
-    // function updateAnnouncement()
-    // command to edit data in tables?
+// Possible Exceptions:
+// 1. column doesn't exist
+// 2. if updating status and provide value that isn't within ENUM set
+// 3. invalid id provided
+// 4. general exception: strings have to be encased in double quotes e.g. "'APPROVED'"
+async function updateAnnouncement(column, newValue, id) {
+    const update = `UPDATE announcementstest SET ${column} = ${newValue} WHERE announcementid = ${id}`;
+    console.log(update);
+    return await executeQuery(update);
+}
 
 module.exports = {
-    getAnnouncements
-}
+    getAnnouncements,
+    createAnnouncement,
+    updateAnnouncement
+};

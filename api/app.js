@@ -7,11 +7,15 @@ var logger = require('morgan');
 var indexRouter = require('./routes/index');
 var usersRouter = require('./routes/users');
 var tempRouter = require('./routes/temp');
-const { hi } = require('./db/connect');
 const {
   getUsers,
   getUserById
 } = require('./db/db-user-interface');
+const {
+  getAnnouncements,
+  createAnnouncement,
+  updateAnnouncement
+} = require('./db/db-announcements-interface');
 
 var app = express();
 
@@ -29,15 +33,27 @@ app.use('/', indexRouter);
 app.use('/users', usersRouter);
 app.use('/end', tempRouter)
 
-
-getUsers().then((res) => {
+// getUsers().then((res) => {
+//   console.log(res.rows);
+// });
+// getUserById(2).then((res) => {
+//   console.log(res.rows);
+// });
+var fields = 'title, body, date_from, date_to, status, priority, creation_time';
+var values = "'Sports Day', 'Fridays sport will be volleyball', TIMESTAMP '2023-02-03 07:00:00', TIMESTAMP '2023-02-10 07:00:00', 'REQUESTED', 'true', TIMESTAMP '2023-02-02 10:00:00'"
+// createAnnouncement(fields, values).then((res) => {
+//   console.log(res.command);
+// });
+var col = 'status';
+var newValue = "'APPROVED'";
+var announceID = 2; 
+// updateAnnouncement(col, newValue, announceID).then((res) => {
+//   console.log(res.command);
+// })
+getAnnouncements().then((res) => {
   console.log(res.rows);
 });
-getUserById(2).then((res) => {
-  console.log(res.rows);
-});
-// console.log(hi());
-
+  
 // catch 404 and forward to error handler
 app.use(function(req, res, next) {
   next(createError(404));
