@@ -1,12 +1,19 @@
 const express = require('express');
 const router = express.Router();
 
+const {
+    getAnnouncements,
+    createAnnouncement,
+    updateAnnouncement,
+    deleteAnnouncement
+} = require('../db/db-announcements-interface');
+
 const GET_QUERY_PARAMS = ["id", "category", "datefrom", "dateto", "status"];
 const POST_BODY_FORMAT = {
     "title": "string",
     "body": "string",
-    "dateFrom": "string",
-    "dateTo": "string",
+    "datefrom": "string",
+    "dateto": "string",
     "priority": "boolean"
 }
 
@@ -21,8 +28,11 @@ router.get('/', async function(req, res, next) {
             }
         }
     }
-    // TODO get announcement from db when interface is ready
-    res.status(200).send(null);
+    getAnnouncements().then((query) => {
+        res.status(200).send(query.rows);
+    }).catch((err) => {
+        res.status(500).send({ error: 'Unknown error.' });
+    })
 });
 
 // post endpoint to create a new announcement
@@ -48,19 +58,26 @@ router.post('/', async function(req, res, next) {
         }
     }
     const changeTime = new Date(Date.now()).toISOString();
-    const status = "REQUESTED";
-    // TODO add announcement to database when interface is ready
-    res.status(200).send({ announcementId: null, status: status});
+    const status = "requested";
+    createAnnouncement("title, body, media, datefrom, dateto, userid, status, priority, lastchangetime, lastchangeuser, creationtime", `'${req.body.title}', '${req.body.body}', '${req.body.media}', '${req.body.dateFrom}', '${req.body.dateTo}', '1', '${status}', '${req.body.priority}', '${changeTime}', '1', '${changeTime}'`).then((query) => {
+        res.status(200).send({ announcementId: query.rows[0].announcementid, status: status });
+    }).catch((err) => {
+        res.status(500).send({ error: 'Unknown error.' });
+    });
 });
 
 // get endpoint for particular announcement
 router.get('/:announcementId', async function(req, res, next) {
-    const announcement = null; // TODO get announcement from database when interface is ready
-    if (announcement === null) {
-        res.status(404).send({error: `Announcement with id ${req.params.announcementId} not found`});
-        return;
-    }
-    res.status(200).send(null);
+    getAnnouncements(`announcementid = '${req.params.announcementId}'`).then((query) => {
+        console.log(query.rows.length);
+        if (query.rows.length < 1) {
+            res.status(404).send({error: `Announcement with id ${req.params.announcementId} not found`});
+        } else {
+            res.status(200).send(query.rows[0]);
+        }
+    }).catch((err) => {
+        res.status(500).send({error: 'Unknown error.'});
+    });
 });
 
 // put endpoint to edit a particular announcement
@@ -71,21 +88,34 @@ router.put('/:announcementId', async function(req, res, next) {
             if (!(prop in POST_BODY_FORMAT)) {
                 res.status(400).send({error: `Invalid body property: ${prop}`});
                 return;
+            } else {
+                await updateAnnouncement(prop, req.body[prop], req.params.announcementId).catch((err) => {
+                    res.status(500).send({ error: 'Unknown error.' });
+                });
+                if (res.statusCode === 500) {
+                    return;
+                }
             }
         }
     }
-    // TODO update announcement in database when interface is ready
-    res.status(200).send({ announcementId: req.params.announcementId, status: null });
+    getAnnouncements(`announcementid = '${req.params.announcementId}'`).then((query) => {
+        res.status(200).send({ announcementId: req.params.announcementId, status: query.rows[0].status });
+    }).catch((err) => {
+        res.status(500).send({ error: 'Unknown error.' });
+    });
 });
 
 // delete endpoint to remove announcements
 router.delete('/:announcementId', async function(req, res, next) {
-    const announcement = null; // TODO attempt delete when interface is ready
-    if (announcement === null) {
-        res.status(404).send({error: `Announcement with id ${req.params.announcementId} not found`});
-        return;
-    }
-    res.status(200).send({ announcementId: req.params.announcementId, status: null });
+    deleteAnnouncement(req.params.announcementId).then((query) => {
+        if (query.rows.length < 1) {
+            res.status(404).send({error: `Announcement with id ${req.params.announcementId} not found.`});
+        } else {
+            res.status(200).send({});
+        }
+    }).catch((err) => {
+        res.status(500).send({ error: 'Unknown error.' });
+    });
 });
 
 module.exports = router;

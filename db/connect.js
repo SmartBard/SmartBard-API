@@ -5,11 +5,11 @@ const { json } = require('express');
 const { Pool } = require('pg');
 
 const pool = new Pool({
-  host: 'localhost',
-  user: 'postgres',
+  host: process.env.POSTGRES_HOST,
+  user: process.env.POSTGRES_USER,
   port: 5432,
-  password: process.env.PASSWORD,
-  database: 'test',
+  password: process.env.POSTGRES_PASSWORD,
+  database: process.env.POSTGRES_DATABASE,
   // max: // This allows us to specify max clients?
   idleTimeoutMillis: 30000,
   connectionTimeoutMillis: 2000,
