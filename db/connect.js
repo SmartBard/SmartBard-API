@@ -18,7 +18,7 @@ const pool = new Pool({
 async function executeQuery(queryString) {
   // Is it bad practice to store results in var instead of const?
   // Or return within try block...
-  var res;
+  let res;
 
   try {
     const client = await pool.connect();
