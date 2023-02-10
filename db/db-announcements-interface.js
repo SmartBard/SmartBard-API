@@ -3,8 +3,8 @@ const {
 } = require('./connect');
 
 async function getAnnouncements() {
-    const selectUserById = `SELECT * FROM announcements`;
-    return await executeQuery(selectUserById);
+    const selectAnnouncements = `SELECT * FROM announcements`;
+    return await executeQuery(selectAnnouncements);
   }
     
 // pg-promise might have functionality for inserting into a table
