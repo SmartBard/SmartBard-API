@@ -7,6 +7,12 @@ async function getUserSettings() {
     return await executeQuery(selectUserSettings);
 }
 
+async function createUserSettings(columns, values) {
+    const insertUserSettings = `INSERT INTO user_settings (${columns}) VALUES (${values})`;
+    return await executeQuery(insertUserSettings);
+}
+
 module.exports = {
-    getUserSettings
+    getUserSettings,
+    createUserSettings
 }
