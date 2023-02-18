@@ -8,7 +8,7 @@ const {
     deleteAnnouncement
 } = require('../db/db-announcements-interface');
 
-const GET_QUERY_PARAMS = ["id", "category", "datefrom", "dateto", "status"];
+const GET_QUERY_PARAMS = ["category", "datefrom", "dateto", "status"];
 const POST_BODY_FORMAT = {
     "title": "string",
     "body": "string",
@@ -16,9 +16,18 @@ const POST_BODY_FORMAT = {
     "dateto": "string",
     "priority": "boolean"
 }
+const PUT_BODY_FORMAT = {
+    "title": "string",
+    "body": "string",
+    "datefrom": "string",
+    "dateto": "string",
+    "priority": "boolean",
+    "status": "string"
+}
 
 // get endpoint for all announcements
 router.get('/', async function(req, res, next) {
+    let query = "";
     // validating query parameters
     for (const prop in req.query) {
         if (req.query.hasOwnProperty(prop)) {
@@ -26,9 +35,31 @@ router.get('/', async function(req, res, next) {
                 res.status(400).send({ error: `Invalid query parameter: ${prop}` });
                 return;
             }
+            if (query.length !== 0) {
+                query += " AND ";
+            }
+            if (prop === "datefrom") {
+                query += `datefrom > '${req.query[prop]}'`;
+            } else if (prop === "dateto") {
+                query += `dateto < '${req.query[prop]}'`;
+            } else {
+                query += `${prop} = '${req.query[prop]}'`
+            }
         }
     }
-    getAnnouncements().then((query) => {
+    if (!query.includes("datefrom") || !query.includes("dateto")) {
+        if (query.length !== 0) {
+            query += " AND ";
+        }
+        query += `datefrom < now() AND dateto > now()`;
+    }
+    if (!query.includes("status")) {
+        if (query.length !== 0) {
+            query += " AND ";
+        }
+        query += `status = 'approved'`;
+    }
+    getAnnouncements(query).then((query) => {
         res.status(200).send(query.rows);
     }).catch((err) => {
         res.status(500).send({ error: 'Unknown error.' });
@@ -59,7 +90,7 @@ router.post('/', async function(req, res, next) {
     }
     const changeTime = new Date(Date.now()).toISOString();
     const status = "requested";
-    createAnnouncement("title, body, media, datefrom, dateto, userid, status, priority, lastchangetime, lastchangeuser, creationtime", `'${req.body.title}', '${req.body.body}', '${req.body.media}', '${req.body.dateFrom}', '${req.body.dateTo}', '1', '${status}', '${req.body.priority}', '${changeTime}', '1', '${changeTime}'`).then((query) => {
+    createAnnouncement("title, body, media, datefrom, dateto, userid, status, priority, lastchangetime, lastchangeuser, creationtime", `'${req.body.title}', '${req.body.body}', '${req.body.media}', '${req.body.datefrom}', '${req.body.dateto}', '1', '${status}', '${req.body.priority}', '${changeTime}', '1', '${changeTime}'`).then((query) => {
         res.status(200).send({ announcementId: query.rows[0].announcementid, status: status });
     }).catch((err) => {
         res.status(500).send({ error: 'Unknown error.' });
@@ -85,7 +116,7 @@ router.put('/:announcementId', async function(req, res, next) {
     // validating request body
     for (const prop in req.body) {
         if (req.body.hasOwnProperty(prop)) {
-            if (!(prop in POST_BODY_FORMAT)) {
+            if (!(prop in PUT_BODY_FORMAT)) {
                 res.status(400).send({error: `Invalid body property: ${prop}`});
                 return;
             } else {
@@ -97,6 +128,12 @@ router.put('/:announcementId', async function(req, res, next) {
                 }
             }
         }
+    }
+    await updateAnnouncement("lastchangetime", new Date(Date.now()).toISOString(), req.params.announcementId).catch((err) => {
+        res.status(500).send({ error: 'Unknown error.' });
+    });
+    if (res.statusCode === 500) {
+        return;
     }
     getAnnouncements(`announcementid = '${req.params.announcementId}'`).then((query) => {
         res.status(200).send({ announcementId: req.params.announcementId, status: query.rows[0].status });
