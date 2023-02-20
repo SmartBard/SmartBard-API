@@ -1,9 +1,13 @@
+const { query } = require('express');
 const {
   executeQuery
 } = require('./connect');
 
-async function getUserSettings() {
-  const selectUserSettings = `SELECT * FROM user_settings`;
+async function getUserSettings(query = "") {
+  let selectUserSettings = `SELECT * FROM user_settings`;
+  if (query.length > 0) {
+    selectUserSettings += ` WHERE ${query};`;
+  }
   return await executeQuery(selectUserSettings);
 }
 

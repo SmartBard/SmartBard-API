@@ -7,6 +7,7 @@ const {
   updateUserSettings
 } = require('../db/db-user-settings-interface');
 
+const GET_QUERY_PARAMS = ["settings_id", "user_id", "text_size", "brightness", "contrast", "volume", "delay", "primary_color", "secondary_color"];
 const POST_BODY_FORMAT = {
   "text_size": "number",
   "brightness": "number",
@@ -17,8 +18,27 @@ const POST_BODY_FORMAT = {
 
 // get endpoint for user settings
 router.get('/', async function(req, res, next) {
-  // console.log(req.query);
-  getUserSettings().then((query) => {
+  let query = "";
+  // validating query parameters
+  for (const prop in req.body) {
+    if (req.body.hasOwnProperty(prop)) {
+      if(!GET_QUERY_PARAMS.includes(prop)) {
+        res.status(400).send({ error: `Invalid query parameter: ${prop}` });
+        return;
+      }
+      if (query.length !== 0) {
+        query += " AND ";
+      }
+      if (prop === "primary_color") {
+        query += `primary_color = '${req.body[prop]}'`;
+      } else if (prop === 'secondary_color') {
+        query += `secondary_color = '${req.body[prop]}'`;
+      } else {
+        query += `${prop} = ${req.body[prop]}`
+      }
+    }
+  }
+  getUserSettings(query).then((query) => {
     res.status(200).send(query.rows);
   }).catch((err) => {
     res.status(400).send({ error: 'Unknown error.' });
