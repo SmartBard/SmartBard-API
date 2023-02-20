@@ -4,7 +4,8 @@ const {
   getUserSettings,
   getUserSettingsById,
   createUserSettings,
-  updateUserSettings
+  updateUserSettings,
+  deleteUserSettings,
 } = require('../db/db-user-settings-interface');
 
 const GET_QUERY_PARAMS = ["settings_id", "user_id", "text_size", "brightness", "contrast", "volume", "delay", "primary_color", "secondary_color"];
@@ -57,8 +58,9 @@ router.post('/', async function(req, res, next) {
       return;
     }
   }
-  const fields = 'text_size, brightness, contrast, volume, primary_color';
-  const values = `${req.body.text_size}, ${req.body.brightness}, ${req.body.contrast}, ${req.body.volume}, '${req.body.primary_color}'`;
+  // const fields = 'text_size, brightness, contrast, volume, primary_color';
+  const fields = 'text_size, brightness, contrast, volume, delay, primary_color, secondary_color';
+  const values = `${req.body.text_size}, ${req.body.brightness}, ${req.body.contrast}, ${req.body.volume}, ${req.body.delay}, '${req.body.primary_color}', '${req.body.secondary_color}'`;
   createUserSettings(fields, values).then((query) => {
     res.status(200).send({ command: query.command });
   }).catch((err) => {
@@ -79,20 +81,35 @@ router.put('/:settingsId', async function(req, res, next) {
         if (typeof req.body[prop] === 'string') {
           newValue = `'${req.body[prop]}'`;
         } 
-        await updateUserSettings(prop, newValue, req.params.settingsId).catch((err) => {
+        await updateUserSettings(prop, newValue, req.params.settingsId)
+        .catch((err) => {
           res.status(500).send({ error: 'Unknown error.' });
         });
-        if (res.statusCode == 500) {
+        if (res.statusCode === 500) {
           return;
         }
       }
     }
-    getUserSettingsById(req.params.settingsId).then((query) => {
-      res.status(200).send({ settings_id: query.rows[0].settings_id, update: "success" });
-    }).catch((err) => {
-      res.status(500).send({ error: 'Unknown error.' });
-    });
   }
+  getUserSettings(`settings_id = ${req.params.settingsId}`).then((query) => {
+    res.status(200).send({ settings_id: query.rows[0].settings_id, update: "success" });
+  }).catch((err) => {
+    res.status(500).send({ error: 'Unknown error.' });
+  });
+});
+
+// delete endpoint
+router.delete('/:settingsId', async function(req, res, next) {
+  deleteUserSettings(req.params.settingsId).then((query) => {
+    // console.log(query.rows);
+    if (query.rows.length < 1) {
+      res.status(404).send({ error: `Settings with id ${req.params.settingsId} not found` });
+    } else {
+      res.status(200).send({});
+    }
+  }).catch((err) => {
+    res.status(500).send({ error: 'Unknown error.'});
+  });
 });
 
 module.exports = router;

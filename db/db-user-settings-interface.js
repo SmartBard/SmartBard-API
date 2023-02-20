@@ -26,9 +26,15 @@ async function updateUserSettings(column, newValue, settingsId) {
   return await executeQuery(setUserSettings);
 }
 
+async function deleteUserSettings(settingsId) {
+  const deleteSetting = `DELETE FROM user_settings WHERE settings_id = ${settingsId} RETURNING *;`;
+  return await executeQuery(deleteSetting);
+}
+
 module.exports = {
   getUserSettings,
   getUserSettingsById,
   createUserSettings,
-  updateUserSettings
+  updateUserSettings,
+  deleteUserSettings
 }
