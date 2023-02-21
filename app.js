@@ -5,6 +5,7 @@ const logger = require('morgan');
 
 const indexRouter = require('./routes/index');
 const tempRouter = require('./routes/temp');
+const announcementsRouter = require('./routes/announcements');
 
 const {
   getUsers,
@@ -26,8 +27,9 @@ app.use(express.urlencoded({ extended: false }));
 app.use(cookieParser());
 
 app.use('/', indexRouter);
-app.use('/end', tempRouter)
-  
+app.use('/end', tempRouter);
+app.use('/announcements', announcementsRouter);
+
 // catch 404 and forward to error handler
 app.use(function(req, res, next) {
   next(createError(404));
