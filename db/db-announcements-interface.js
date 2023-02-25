@@ -2,15 +2,18 @@ const {
     executeQuery
 } = require('./connect');
 
-async function getAnnouncements() {
-    const selectAnnouncements = `SELECT * FROM announcements`;
+async function getAnnouncements(query = "") {
+    let selectAnnouncements = `SELECT * FROM announcements`;
+    if (query.length > 0) {
+        selectAnnouncements += ` WHERE ${query};`;
+    }
     return await executeQuery(selectAnnouncements);
   }
     
 // pg-promise might have functionality for inserting into a table
 // for now, pass two strings? Or use a map with key value pair?
 async function createAnnouncement(columns, values) {
-    const insert = `INSERT INTO announcements (${columns}) VALUES (${values})`;
+    const insert = `INSERT INTO announcements (${columns}) VALUES (${values}) RETURNING *;`;
     return await executeQuery(insert);
 }
 
@@ -20,8 +23,13 @@ async function createAnnouncement(columns, values) {
 // 3. invalid id provided
 // 4. general exception: strings have to be encased in double quotes e.g. "'APPROVED'"
 async function updateAnnouncement(column, newValue, id) {
-    const update = `UPDATE announcements SET ${column} = ${newValue} WHERE announcementid = ${id}`;
+    const update = `UPDATE announcements SET ${column} = '${newValue}' WHERE announcementid = ${id}`;
     return await executeQuery(update);
+}
+
+async function deleteAnnouncement(id) {
+    const delQuery = `DELETE FROM announcements WHERE announcementid = '${id}' RETURNING *;`;
+    return await executeQuery(delQuery);
 }
 
 // returns last change time and last change user when provided with id
@@ -35,5 +43,6 @@ module.exports = {
     getAnnouncements,
     createAnnouncement,
     updateAnnouncement,
+    deleteAnnouncement,
     getUserActivity
 };
