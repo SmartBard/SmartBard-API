@@ -6,6 +6,7 @@ const logger = require('morgan');
 const indexRouter = require('./routes/index');
 const tempRouter = require('./routes/temp');
 const announcementsRouter = require('./routes/announcements');
+const auditLogRouter = require('./routes/auditlog');
 
 const {
   getUsers,
@@ -29,6 +30,7 @@ app.use(cookieParser());
 app.use('/', indexRouter);
 app.use('/end', tempRouter);
 app.use('/announcements', announcementsRouter);
+app.use('/auditlog', auditLogRouter);
 
 // catch 404 and forward to error handler
 app.use(function(req, res, next) {
