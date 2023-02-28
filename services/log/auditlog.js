@@ -1,4 +1,5 @@
 const { addLog } = require('../../db/db-auditlog-interface');
+const cloudWatchLogger = require('./cloudwatch');
 
 const ALLOWED_ACTIONS = ['requested', 'approved', 'denied', 'changes'];
 
@@ -13,7 +14,7 @@ async function logAction(action, announcementId, user) {
             err = true;
         }
     }).catch((error) => {
-        console.log(error);
+        cloudWatchLogger.logger.error(error);
         err = true;
     })
     return err;
