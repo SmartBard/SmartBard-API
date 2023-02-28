@@ -4,6 +4,11 @@ const router = express.Router();
 const { retrieveLogPage } = require('../db/db-auditlog-interface');
 
 router.get('/', async function(req, res, next) {
+    try {
+        throw new Error();
+    } catch(err) {
+        console.log(err);
+    }
     let page = 0;
     if (req.query.hasOwnProperty("page")) {
         try {
