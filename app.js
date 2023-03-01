@@ -6,6 +6,7 @@ const xray = require('aws-xray-sdk');
 const cloudWatchLogger = require('./services/log/cloudwatch');
 
 const indexRouter = require('./routes/index');
+const userSettingsRouter = require('./routes/user-settings');
 const tempRouter = require('./routes/temp');
 const announcementsRouter = require('./routes/announcements');
 const auditLogRouter = require('./routes/auditlog');
@@ -37,9 +38,11 @@ app.use((req, res, next) => {
 });
 
 app.use('/', indexRouter);
-app.use('/end', tempRouter);
+app.use('/user-settings', userSettingsRouter);
 app.use('/announcements', announcementsRouter);
 app.use('/auditlog', auditLogRouter);
+app.use('/end', tempRouter);
+
 
 // catch 404 and forward to error handler
 app.use(function(req, res, next) {
