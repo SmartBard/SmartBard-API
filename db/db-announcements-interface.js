@@ -3,11 +3,11 @@ const {
 } = require('./connect');
 
 async function getAnnouncements(query = "") {
-    let selectUserById = `SELECT * FROM announcements`;
+    let selectAnnouncements = `SELECT * FROM announcements`;
     if (query.length > 0) {
-        selectUserById += ` WHERE ${query};`;
+        selectAnnouncements += ` WHERE ${query};`;
     }
-    return await executeQuery(selectUserById);
+    return await executeQuery(selectAnnouncements);
   }
     
 // pg-promise might have functionality for inserting into a table
