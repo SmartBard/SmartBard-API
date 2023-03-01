@@ -3,31 +3,28 @@ const {
   executeQuery
 } = require('./connect');
 
-async function getUserSettings(query = "") {
-  let selectUserSettings = `SELECT * FROM user_settings`;
-  if (query.length > 0) {
-    selectUserSettings += ` WHERE ${query};`;
-  }
+async function getUserSettings(user) {
+  let selectUserSettings = `SELECT * FROM usersettings WHERE userid = ${user};`;
   return await executeQuery(selectUserSettings);
 }
 
 async function getUserSettingsById(settingsId) {
-  const selectSettingById = `SELECT * FROM user_settings WHERE settings_id = ${settingsId}`;
+  const selectSettingById = `SELECT * FROM usersettings WHERE settingsid = ${settingsId};`;
   return await executeQuery(selectSettingById);
 }
 
 async function createUserSettings(columns, values) {
-  const insertUserSettings = `INSERT INTO user_settings (${columns}) VALUES (${values})`;
+  const insertUserSettings = `INSERT INTO usersettings (${columns}) VALUES (${values}) RETURNING *;`;
   return await executeQuery(insertUserSettings);
 }
 
 async function updateUserSettings(column, newValue, settingsId) {
-  const setUserSettings = `UPDATE user_settings SET ${column} = ${newValue} WHERE settings_id = ${settingsId}`;
+  const setUserSettings = `UPDATE usersettings SET ${column} = ${newValue} WHERE settingsid = ${settingsId};`;
   return await executeQuery(setUserSettings);
 }
 
-async function deleteUserSettings(settingsId) {
-  const deleteSetting = `DELETE FROM user_settings WHERE settings_id = ${settingsId} RETURNING *;`;
+async function deleteUserSettings(userId) {
+  const deleteSetting = `DELETE FROM usersettings WHERE userId = ${userId} RETURNING *;`;
   return await executeQuery(deleteSetting);
 }
 

@@ -2,47 +2,31 @@ const express = require('express');
 const router = express.Router();
 const {
   getUserSettings,
-  getUserSettingsById,
   createUserSettings,
   updateUserSettings,
   deleteUserSettings,
 } = require('../db/db-user-settings-interface');
 
-const GET_QUERY_PARAMS = ["settings_id", "user_id", "text_size", "brightness", "contrast", "volume", "delay", "primary_color", "secondary_color"];
 const POST_BODY_FORMAT = {
-  "text_size": "number",
+  "textsize": "number",
   "brightness": "number",
   "contrast": "number",
   "volume": "number",
-  "primary_color": "string"
+  "delay": "number",
+  "primarycolor": "string",
+  "secondarycolor": "string"
 }
 
 // get endpoint for user settings
-router.get('/', async function(req, res, next) {
-  let query = "";
-  // validating query parameters
-  for (const prop in req.body) {
-    if (req.body.hasOwnProperty(prop)) {
-      if(!GET_QUERY_PARAMS.includes(prop)) {
-        res.status(400).send({ error: `Invalid query parameter: ${prop}` });
-        return;
-      }
-      if (query.length !== 0) {
-        query += " AND ";
-      }
-      if (prop === "primary_color") {
-        query += `primary_color = '${req.body[prop]}'`;
-      } else if (prop === 'secondary_color') {
-        query += `secondary_color = '${req.body[prop]}'`;
-      } else {
-        query += `${prop} = ${req.body[prop]}`
-      }
+router.get('/:userId', async function(req, res, next) {
+  getUserSettings(req.params.userId).then((query) => {
+    if (query.rows.length > 0) {
+      res.status(200).send(query.rows[0]);
+    } else {
+      res.status(404).send({ error: `Did not find user settings for user ${req.params.userId}`});
     }
-  }
-  getUserSettings(query).then((query) => {
-    res.status(200).send(query.rows);
   }).catch((err) => {
-    res.status(400).send({ error: 'Unknown error.' });
+    res.status(500).send({ error: 'Unknown error.' });
   });
 });
 
@@ -58,13 +42,21 @@ router.post('/', async function(req, res, next) {
       return;
     }
   }
-  // const fields = 'text_size, brightness, contrast, volume, primary_color';
-  const fields = 'text_size, brightness, contrast, volume, delay, primary_color, secondary_color';
-  const values = `${req.body.text_size}, ${req.body.brightness}, ${req.body.contrast}, ${req.body.volume}, ${req.body.delay}, '${req.body.primary_color}', '${req.body.secondary_color}'`;
-  createUserSettings(fields, values).then((query) => {
-    res.status(200).send({ command: query.command });
+  const userId = `1`; // hardcoded for now
+  const fields = 'userid, textsize, brightness, contrast, volume, delay, primarycolor, secondarycolor';
+  const values = `'${userId}', ${req.body.textsize}, ${req.body.brightness}, ${req.body.contrast}, ${req.body.volume}, ${req.body.delay}, '${req.body.primarycolor}', '${req.body.secondarycolor}'`;
+  getUserSettings(userId).then((query) => {
+    if (query.rows.length > 0) {
+      res.status(400).send({ error: `Settings already exist for user ${userId}` });
+    } else {
+      createUserSettings(fields, values).then((query) => {
+        res.status(200).send({ settingsid: query.rows[0].settingsid });
+      }).catch((err) => {
+        res.status(500).send({ error: 'Unknown error.' });
+      });
+    }
   }).catch((err) => {
-    res.status(400).send({ error: 'Unknown error.' });
+    res.status(500).send({ error: 'Unknown error.' });
   });
 })
 
@@ -91,19 +83,19 @@ router.put('/:settingsId', async function(req, res, next) {
       }
     }
   }
-  getUserSettings(`settings_id = ${req.params.settingsId}`).then((query) => {
-    res.status(200).send({ settings_id: query.rows[0].settings_id, update: "success" });
+  getUserSettings(`settingsid = ${req.params.settingsId}`).then((query) => {
+    res.status(200).send({ settings_id: query.rows[0].settingsid, update: "success" });
   }).catch((err) => {
     res.status(500).send({ error: 'Unknown error.' });
   });
 });
 
 // delete endpoint
-router.delete('/:settingsId', async function(req, res, next) {
-  deleteUserSettings(req.params.settingsId).then((query) => {
+router.delete('/:userId', async function(req, res, next) {
+  deleteUserSettings(req.params.userId).then((query) => {
     // console.log(query.rows);
     if (query.rows.length < 1) {
-      res.status(404).send({ error: `Settings with id ${req.params.settingsId} not found` });
+      res.status(404).send({ error: `User with id ${req.params.userId} not found` });
     } else {
       res.status(200).send({});
     }
