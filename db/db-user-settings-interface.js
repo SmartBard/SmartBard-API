@@ -18,8 +18,8 @@ async function createUserSettings(columns, values) {
   return await executeQuery(insertUserSettings);
 }
 
-async function updateUserSettings(column, newValue, settingsId) {
-  const setUserSettings = `UPDATE usersettings SET ${column} = ${newValue} WHERE settingsid = ${settingsId};`;
+async function updateUserSettings(column, newValue, userId) {
+  const setUserSettings = `UPDATE usersettings SET ${column} = ${newValue} WHERE userid = ${userId};`;
   return await executeQuery(setUserSettings);
 }
 

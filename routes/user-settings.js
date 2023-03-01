@@ -6,6 +6,7 @@ const {
   updateUserSettings,
   deleteUserSettings,
 } = require('../db/db-user-settings-interface');
+const cloudWatchLogger = require('../services/log/cloudwatch');
 
 const POST_BODY_FORMAT = {
   "textsize": "number",
@@ -26,6 +27,7 @@ router.get('/:userId', async function(req, res, next) {
       res.status(404).send({ error: `Did not find user settings for user ${req.params.userId}`});
     }
   }).catch((err) => {
+    cloudWatchLogger.logger.error(err);
     res.status(500).send({ error: 'Unknown error.' });
   });
 });
@@ -52,16 +54,18 @@ router.post('/', async function(req, res, next) {
       createUserSettings(fields, values).then((query) => {
         res.status(200).send({ settingsid: query.rows[0].settingsid });
       }).catch((err) => {
+        cloudWatchLogger.logger.error(err);
         res.status(500).send({ error: 'Unknown error.' });
       });
     }
   }).catch((err) => {
+    cloudWatchLogger.logger.error(err);
     res.status(500).send({ error: 'Unknown error.' });
   });
 })
 
 // put endpoint
-router.put('/:settingsId', async function(req, res, next) {
+router.put('/:userId', async function(req, res, next) {
   for (const prop in req.body) {
     if (req.body.hasOwnProperty(prop)) {
       if (!(prop in POST_BODY_FORMAT)) {
@@ -72,9 +76,10 @@ router.put('/:settingsId', async function(req, res, next) {
         let newValue = req.body[prop];
         if (typeof req.body[prop] === 'string') {
           newValue = `'${req.body[prop]}'`;
-        } 
-        await updateUserSettings(prop, newValue, req.params.settingsId)
+        }
+        await updateUserSettings(prop, newValue, req.params.userId)
         .catch((err) => {
+          cloudWatchLogger.logger.error(err);
           res.status(500).send({ error: 'Unknown error.' });
         });
         if (res.statusCode === 500) {
@@ -83,11 +88,7 @@ router.put('/:settingsId', async function(req, res, next) {
       }
     }
   }
-  getUserSettings(`settingsid = ${req.params.settingsId}`).then((query) => {
-    res.status(200).send({ settings_id: query.rows[0].settingsid, update: "success" });
-  }).catch((err) => {
-    res.status(500).send({ error: 'Unknown error.' });
-  });
+  res.status(200).send({ userid: req.params.userId, update: "success" });
 });
 
 // delete endpoint
@@ -100,6 +101,7 @@ router.delete('/:userId', async function(req, res, next) {
       res.status(200).send({});
     }
   }).catch((err) => {
+    cloudWatchLogger.logger.error(err);
     res.status(500).send({ error: 'Unknown error.'});
   });
 });

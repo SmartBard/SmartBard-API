@@ -7,6 +7,8 @@ const {
     updateAnnouncement,
     deleteAnnouncement
 } = require('../db/db-announcements-interface');
+const { logAction } = require('../services/log/auditlog');
+const cloudWatchLogger = require('../services/log/cloudwatch');
 
 const GET_QUERY_PARAMS = ["category", "datefrom", "dateto", "status"];
 const POST_BODY_FORMAT = {
@@ -62,6 +64,7 @@ router.get('/', async function(req, res, next) {
     getAnnouncements(query).then((query) => {
         res.status(200).send(query.rows);
     }).catch((err) => {
+        cloudWatchLogger.logger.error(err);
         res.status(500).send({ error: 'Unknown error.' });
     })
 });
@@ -90,9 +93,11 @@ router.post('/', async function(req, res, next) {
     }
     const changeTime = new Date(Date.now()).toISOString();
     const status = "requested";
-    createAnnouncement("title, body, media, datefrom, dateto, userid, status, priority, lastchangetime, lastchangeuser, creationtime", `'${req.body.title}', '${req.body.body}', '${req.body.media}', '${req.body.datefrom}', '${req.body.dateto}', '1', '${status}', '${req.body.priority}', '${changeTime}', '1', '${changeTime}'`).then((query) => {
+    createAnnouncement("title, body, media, datefrom, dateto, userid, status, priority, lastchangetime, lastchangeuser, creationtime", `'${req.body.title}', '${req.body.body}', '${req.body.media}', '${req.body.datefrom}', '${req.body.dateto}', '1', '${status}', '${req.body.priority}', '${changeTime}', '1', '${changeTime}'`).then(async (query) => {
+        await logAction(status, query.rows[0].announcementid, '1');
         res.status(200).send({ announcementId: query.rows[0].announcementid, status: status });
     }).catch((err) => {
+        cloudWatchLogger.logger.error(err);
         res.status(500).send({ error: 'Unknown error.' });
     });
 });
@@ -107,6 +112,7 @@ router.get('/:announcementId', async function(req, res, next) {
             res.status(200).send(query.rows[0]);
         }
     }).catch((err) => {
+        cloudWatchLogger.logger.error(err);
         res.status(500).send({error: 'Unknown error.'});
     });
 });
@@ -121,8 +127,12 @@ router.put('/:announcementId', async function(req, res, next) {
                 return;
             } else {
                 await updateAnnouncement(prop, req.body[prop], req.params.announcementId).catch((err) => {
+                    cloudWatchLogger.logger.error(err);
                     res.status(500).send({ error: 'Unknown error.' });
                 });
+                if (prop === "status") {
+                    await logAction(req.body.status, req.params.announcementId, '1');
+                }
                 if (res.statusCode === 500) {
                     return;
                 }
@@ -130,6 +140,7 @@ router.put('/:announcementId', async function(req, res, next) {
         }
     }
     await updateAnnouncement("lastchangetime", new Date(Date.now()).toISOString(), req.params.announcementId).catch((err) => {
+        cloudWatchLogger.logger.error(err);
         res.status(500).send({ error: 'Unknown error.' });
     });
     if (res.statusCode === 500) {
@@ -138,6 +149,7 @@ router.put('/:announcementId', async function(req, res, next) {
     getAnnouncements(`announcementid = '${req.params.announcementId}'`).then((query) => {
         res.status(200).send({ announcementId: req.params.announcementId, status: query.rows[0].status });
     }).catch((err) => {
+        cloudWatchLogger.logger.error(err);
         res.status(500).send({ error: 'Unknown error.' });
     });
 });
@@ -151,6 +163,7 @@ router.delete('/:announcementId', async function(req, res, next) {
             res.status(200).send({});
         }
     }).catch((err) => {
+        cloudWatchLogger.logger.error(err);
         res.status(500).send({ error: 'Unknown error.' });
     });
 });
