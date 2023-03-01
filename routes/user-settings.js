@@ -76,7 +76,7 @@ router.put('/:userId', async function(req, res, next) {
         let newValue = req.body[prop];
         if (typeof req.body[prop] === 'string') {
           newValue = `'${req.body[prop]}'`;
-        } 
+        }
         await updateUserSettings(prop, newValue, req.params.userId)
         .catch((err) => {
           cloudWatchLogger.logger.error(err);
@@ -88,12 +88,7 @@ router.put('/:userId', async function(req, res, next) {
       }
     }
   }
-  getUserSettings(`settingsid = ${req.params.userId}`).then((query) => {
-    res.status(200).send({ settings_id: query.rows[0].settingsid, update: "success" });
-  }).catch((err) => {
-    cloudWatchLogger.logger.error(err);
-    res.status(500).send({ error: 'Unknown error.' });
-  });
+  res.status(200).send({ userid: req.params.userId, update: "success" });
 });
 
 // delete endpoint
