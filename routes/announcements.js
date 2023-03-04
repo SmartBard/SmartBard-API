@@ -29,39 +29,30 @@ const PUT_BODY_FORMAT = {
 
 // get endpoint for all announcements
 router.get('/', async function(req, res, next) {
-    let query = "";
     // validating query parameters
+    let cols = [];
+    let vals = [];
     for (const prop in req.query) {
         if (req.query.hasOwnProperty(prop)) {
             if (!GET_QUERY_PARAMS.includes(prop)) {
                 res.status(400).send({ error: `Invalid query parameter: ${prop}` });
                 return;
             }
-            if (query.length !== 0) {
-                query += " AND ";
-            }
-            if (prop === "datefrom") {
-                query += `datefrom > '${req.query[prop]}'`;
-            } else if (prop === "dateto") {
-                query += `dateto < '${req.query[prop]}'`;
-            } else {
-                query += `${prop} = '${req.query[prop]}'`
-            }
+            cols.push(prop);
+            vals.push(req.query[prop]);
         }
     }
-    if (!query.includes("datefrom") || !query.includes("dateto")) {
-        if (query.length !== 0) {
-            query += " AND ";
-        }
-        query += `datefrom < now() AND dateto > now()`;
+    if (!cols.includes("datefrom") || !cols.includes("dateto")) {
+        cols.push('datefrom');
+        vals.push(null);
+        cols.push('dateto');
+        vals.push(null);
     }
-    if (!query.includes("status")) {
-        if (query.length !== 0) {
-            query += " AND ";
-        }
-        query += `status = 'approved'`;
+    if (!cols.includes("status")) {
+        cols.push('status');
+        vals.push('approved');
     }
-    getAnnouncements(query).then((query) => {
+    getAnnouncements(cols, vals).then((query) => {
         res.status(200).send(query.rows);
     }).catch((err) => {
         cloudWatchLogger.logger.error(err);
@@ -93,18 +84,20 @@ router.post('/', async function(req, res, next) {
     }
     const changeTime = new Date(Date.now()).toISOString();
     const status = "requested";
-    createAnnouncement("title, body, media, datefrom, dateto, userid, status, priority, lastchangetime, lastchangeuser, creationtime", `'${req.body.title}', '${req.body.body}', '${req.body.media}', '${req.body.datefrom}', '${req.body.dateto}', '1', '${status}', '${req.body.priority}', '${changeTime}', '1', '${changeTime}'`).then(async (query) => {
+    const vals = [req.body.title, req.body.body, req.body.media, req.body.datefrom, req.body.dateto, '1', status, req.body.priority, changeTime, '1', changeTime];
+    createAnnouncement(vals).then(async (query) => {
         await logAction(status, query.rows[0].announcementid, '1');
         res.status(200).send({ announcementId: query.rows[0].announcementid, status: status });
     }).catch((err) => {
         cloudWatchLogger.logger.error(err);
+        console.log(err);
         res.status(500).send({ error: 'Unknown error.' });
     });
 });
 
 // get endpoint for particular announcement
 router.get('/:announcementId', async function(req, res, next) {
-    getAnnouncements(`announcementid = '${req.params.announcementId}'`).then((query) => {
+    getAnnouncements(['announcementid'], [req.params.announcementId]).then((query) => {
         console.log(query.rows.length);
         if (query.rows.length < 1) {
             res.status(404).send({error: `Announcement with id ${req.params.announcementId} not found`});
@@ -113,6 +106,7 @@ router.get('/:announcementId', async function(req, res, next) {
         }
     }).catch((err) => {
         cloudWatchLogger.logger.error(err);
+        console.log(err);
         res.status(500).send({error: 'Unknown error.'});
     });
 });
@@ -141,15 +135,17 @@ router.put('/:announcementId', async function(req, res, next) {
     }
     await updateAnnouncement("lastchangetime", new Date(Date.now()).toISOString(), req.params.announcementId).catch((err) => {
         cloudWatchLogger.logger.error(err);
+        console.log(err);
         res.status(500).send({ error: 'Unknown error.' });
     });
     if (res.statusCode === 500) {
         return;
     }
-    getAnnouncements(`announcementid = '${req.params.announcementId}'`).then((query) => {
+    getAnnouncements(['announcementid'], [req.params.announcementId]).then((query) => {
         res.status(200).send({ announcementId: req.params.announcementId, status: query.rows[0].status });
     }).catch((err) => {
         cloudWatchLogger.logger.error(err);
+        console.log(err);
         res.status(500).send({ error: 'Unknown error.' });
     });
 });
@@ -164,6 +160,7 @@ router.delete('/:announcementId', async function(req, res, next) {
         }
     }).catch((err) => {
         cloudWatchLogger.logger.error(err);
+        console.log(err);
         res.status(500).send({ error: 'Unknown error.' });
     });
 });

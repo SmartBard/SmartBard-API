@@ -27,6 +27,7 @@ async function executeQuery(queryString) {
     await client.release();
   } catch (error) {
     cloudWatchLogger.logger.log('error', error);
+    console.log(error);
   }
   // console.log(res.rows);
   
