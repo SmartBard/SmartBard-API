@@ -7,6 +7,7 @@ const {
     updateAnnouncement,
     deleteAnnouncement
 } = require('../db/db-announcements-interface');
+const { removeLogsOfAnnouncement } = require('../db/db-auditlog-interface');
 const { logAction } = require('../services/log/auditlog');
 const cloudWatchLogger = require('../services/log/cloudwatch');
 
@@ -152,6 +153,12 @@ router.put('/:announcementId', async function(req, res, next) {
 
 // delete endpoint to remove announcements
 router.delete('/:announcementId', async function(req, res, next) {
+    // deleting announcements also requires to remove all logs related to it
+    await removeLogsOfAnnouncement(req.params.announcementId).catch((err) => {
+        cloudWatchLogger.logger.error(err);
+        console.log(err);
+        res.status(500).send({ error: 'Unknown error.' });
+    });
     deleteAnnouncement(req.params.announcementId).then((query) => {
         if (query.rows.length < 1) {
             res.status(404).send({error: `Announcement with id ${req.params.announcementId} not found.`});

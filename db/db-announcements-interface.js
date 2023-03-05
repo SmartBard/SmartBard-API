@@ -49,15 +49,11 @@ async function getAnnouncements(cols, vals) {
 // pg-promise might have functionality for inserting into a table
 // for now, pass two strings? Or use a map with key value pair?
 async function createAnnouncement(vals) {
-    let valParams = '';
-    for (let i = 0; i < vals.length; i++) {
-        valParams += `$${i + 1}`;
-        if (i < vals.length - 1) {
-            valParams += ', ';
-        }
+    if (vals.length !== 11) {
+        throw new Error('Invalid parameter');
     }
     const insertQuery = {
-        text: `INSERT INTO announcements (title, body, media, datefrom, dateto, userid, status, priority, lastchangetime, lastchangeuser, creationtime) VALUES (${valParams}) RETURNING *`,
+        text: `INSERT INTO announcements (title, body, media, datefrom, dateto, userid, status, priority, lastchangetime, lastchangeuser, creationtime) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11) RETURNING *;`,
         values: vals
     }
     return await executeQuery(insertQuery);

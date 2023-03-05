@@ -5,8 +5,7 @@ const { executeQuery }  = require('./connect');
 
 async function getUsers() {
   const selectUsers = {
-    text: `SELECT * FROM users`,
-    // rowMode: `array`
+    text: 'SELECT * FROM users;'
   };
   return await executeQuery(selectUsers);
 }
@@ -14,8 +13,11 @@ async function getUsers() {
 // investigate pg-promise library arg processing to avoid SQL injection
 // await db.any(SELECT * FROM table WHERE $1 and $2, [1, 10])
 async function getUserById(id) {
-  const selectUserById = `SELECT * FROM users WHERE userid=${id}`;
-  return await executeQuery(selectUserById);
+  const selectByIdQuery = {
+    text: 'SELECT * FROM users WHERE userid = $1;',
+    values: [id]
+  }
+  return await executeQuery(selectByIdQuery);
 }
 
 module.exports = {
