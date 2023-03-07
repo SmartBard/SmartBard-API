@@ -15,14 +15,14 @@ const cloudWatchLogger = require('../services/log/cloudwatch');
 const GET_QUERY_PARAMS = ["category", "datefrom", "dateto", "status"];
 const POST_BODY_FORMAT = {
     "title": "string",
-    "media": "string",
+    "body": "string",
     "datefrom": "string",
     "dateto": "string",
     "priority": "boolean"
 }
 const PUT_BODY_FORMAT = {
     "title": "string",
-    "media": "string",
+    "body": "string",
     "datefrom": "string",
     "dateto": "string",
     "priority": "boolean",
