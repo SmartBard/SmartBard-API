@@ -14,7 +14,7 @@ async function getAnnouncements(query = "") {
 // for now, pass two strings? Or use a map with key value pair?
 async function createAnnouncement(columns, values) {
     const insert = `INSERT INTO announcements (${columns}) VALUES (${values}) RETURNING *;`;
-    return await executeQuery(insert);
+    return executeQuery(insert);
 }
 
 // Possible Exceptions:
@@ -29,7 +29,7 @@ async function updateAnnouncement(column, newValue, id) {
 
 async function deleteAnnouncement(id) {
     const delQuery = `DELETE FROM announcements WHERE announcementid = '${id}' RETURNING *;`;
-    return await executeQuery(delQuery);
+    return executeQuery(delQuery);
 }
 
 // returns last change time and last change user when provided with id

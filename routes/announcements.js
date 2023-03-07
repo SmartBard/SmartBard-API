@@ -1,4 +1,6 @@
 const express = require('express');
+const path = require('path');
+
 const router = express.Router();
 
 const {
@@ -11,14 +13,14 @@ const {
 const GET_QUERY_PARAMS = ["category", "datefrom", "dateto", "status"];
 const POST_BODY_FORMAT = {
     "title": "string",
-    "body": "string",
+    "media": "string",
     "datefrom": "string",
     "dateto": "string",
     "priority": "boolean"
 }
 const PUT_BODY_FORMAT = {
     "title": "string",
-    "body": "string",
+    "media": "string",
     "datefrom": "string",
     "dateto": "string",
     "priority": "boolean",
@@ -29,10 +31,12 @@ const {
     createS3Object,
     uploadObjectToS3,
     deleteS3Object,
+    getS3Object
 } = require('../assets-service/s3-connect');
 
-var s3Object = createS3Object('');
-const s3Bucket = 'arn:aws:s3:::smbd-bucket-test';
+//temp values
+var s3Object = createS3Object('AKIAQGDVBYLOXYMHHVSK', 'cwVP/H26m0iy2d2OO1acaFouPlhGHUKzgZ/u/jSD');
+const s3Bucket = 'arn:aws:s3:us-east-1:013130384093:accesspoint/smbd-test-point';
 
 // get endpoint for all announcements
 router.get('/', async function(req, res, next) {
@@ -97,24 +101,41 @@ router.post('/', async function(req, res, next) {
             return;
         }
     }
+
+    // Uploading media to s3 bucket
+    var responseBody = new Object();
+    let uploadSuccess = true;
+    if (req.body.media) {
+        var mediaKey = `assets/someid/${path.basename(req.body.media)}`;
+        await uploadObjectToS3(s3Object, s3Bucket, mediaKey, req.body.media).then(() => {
+            responseBody['Upload'] = 'Success';
+        }).catch((err) => {
+            uploadSuccess = false;
+            responseBody['Upload'] = 'Failed';
+            console.log(err);
+        });
+    };
+    
+    // Updating Database
     const changeTime = new Date(Date.now()).toISOString();
     const status = "requested";
-    createAnnouncement("title, body, media, datefrom, dateto, userid, status, priority, lastchangetime, lastchangeuser, creationtime", `'${req.body.title}', '${req.body.body}', '${req.body.media}', '${req.body.datefrom}', '${req.body.dateto}', '1', '${status}', '${req.body.priority}', '${changeTime}', '1', '${changeTime}'`).then((query) => {
-        res.status(200).write({ announcementId: query.rows[0].announcementid, status: status });
+    const mediaS3Path = s3Bucket + mediaKey;
+    let createSuccess = true;
+    await createAnnouncement("title, body, media, datefrom, dateto, userid, status, priority, lastchangetime, lastchangeuser, creationtime", `'${req.body.title}', '${req.body.body}', '${mediaS3Path}', '${req.body.datefrom}', '${req.body.dateto}', '1', '${status}', '${req.body.priority}', '${changeTime}', '1', '${changeTime}'`).then((query) => {
+        responseBody['announcementId'] = query.rows[0].announcementId;
+        responseBody['status'] = status;
     }).catch((err) => {
-        res.status(500).write({ error: 'Unknown error.' });
+        createSuccess = false;
+        responseBody['Create'] = "Failed";
+        console.log(err);
     });
 
-    // uploading media to s3 bucket
-    if (req.body.media) {
-        uploadObjectToS3(s3Object, s3Bucket, req.body.media, req.body.media).then(() => {
-            res.status(200).write({ S3Bucket : s3Bucket, Key: key});
-        }).catch((err) => {
-            res.status(200).write({ uploaded : key});
-        });
+    // Send Response
+    if (uploadSuccess && createSuccess){
+        res.status(200).send(responseBody);
+    } else {
+        res.status(500).send(responseBody);
     }
-
-    res.end();
 });
 
 // get endpoint for particular announcement
@@ -177,26 +198,40 @@ router.put('/:announcementId', async function(req, res, next) {
 
 // delete endpoint to remove announcements
 router.delete('/:announcementId', async function(req, res, next) {
-    deleteAnnouncement(req.params.announcementId).then((query) => {
-        if (query.rows.length < 1) {
-            res.status(404).write({error: `Announcement with id ${req.params.announcementId} not found.`});
-        } else {
-            res.status(200).write({});
-        }
-    }).catch((err) => {
-        res.status(500).send({ error: 'Unknown error.' });
-    });
+    var responseBody = new Object();
+    let s3Success = true;
+    let dBSuccess = true;
 
     // deleteing object from s3 bucket
-    if (req.params.media) {
-        deleteS3Object(s3Object, s3Bucket, req.body.media).then(() => {
-            res.status(200).write({ deleted : req.body.media});
+    if (req.params.key) {
+        await deleteS3Object(s3Object, s3Bucket, req.params.key).then(() => {
+            responseBody["S3 Deletion"] = ['Success'];
         }).catch((err) => {
-            res.status(500).write({ error: 'S3 Object Failed to Delete.' });
+            s3Success = false;
+            responseBody["S3 Deletion"] = ['Failed'];
+            console.log(err);
         });
     }
 
-    res.end();
+    await deleteAnnouncement(req.params.announcementId).then((query) => {
+        if (query.rows.length < 1) {
+            dBSuccess = false;
+            responseBody["Error"] = `Announcement with id ${req.params.announcementId} not found.`;
+        } else {
+            responseBody["DB Deletion"] = ['Success'];
+        }
+    }).catch((err) => {
+        dBSuccess = false;
+        responseBody["DB Deletion"] = ['Unknown error.'];
+        console.log(err);
+    });
+
+    // Send Response
+    if (s3Success && dBSuccess){
+        res.status(200).send(responseBody);
+    } else {
+        res.status(500).send(responseBody);
+    }
     
 });
 
