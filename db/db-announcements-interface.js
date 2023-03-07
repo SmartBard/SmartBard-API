@@ -7,7 +7,7 @@ async function getAnnouncements(query = "") {
     if (query.length > 0) {
         selectUserById += ` WHERE ${query};`;
     }
-    return await executeQuery(selectUserById);
+    return executeQuery(selectUserById);
   }
     
 // pg-promise might have functionality for inserting into a table

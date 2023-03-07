@@ -35,7 +35,7 @@ const {
 } = require('../assets-service/s3-connect');
 
 //temp values
-var s3Object = createS3Object('AKIAQGDVBYLOXYMHHVSK', 'cwVP/H26m0iy2d2OO1acaFouPlhGHUKzgZ/u/jSD');
+var s3Object = createS3Object(process.env.AWS_ACCESS_KEY, process.env.AWS_SECRET_KEY);
 const s3Bucket = 'arn:aws:s3:us-east-1:013130384093:accesspoint/smbd-test-point';
 
 // get endpoint for all announcements
@@ -72,7 +72,7 @@ router.get('/', async function(req, res, next) {
         }
         query += `status = 'approved'`;
     }
-    getAnnouncements(query).then((query) => {
+    await getAnnouncements(query).then((query) => {
         res.status(200).send(query.rows);
     }).catch((err) => {
         res.status(500).send({ error: 'Unknown error.' });
@@ -102,15 +102,17 @@ router.post('/', async function(req, res, next) {
         }
     }
 
+    let s3Success = true;
+    let dbSuccess = true;
+
     // Uploading media to s3 bucket
     var responseBody = new Object();
-    let uploadSuccess = true;
     if (req.body.media) {
         var mediaKey = `assets/someid/${path.basename(req.body.media)}`;
         await uploadObjectToS3(s3Object, s3Bucket, mediaKey, req.body.media).then(() => {
             responseBody['Upload'] = 'Success';
         }).catch((err) => {
-            uploadSuccess = false;
+            s3Success = false;
             responseBody['Upload'] = 'Failed';
             console.log(err);
         });
@@ -119,19 +121,18 @@ router.post('/', async function(req, res, next) {
     // Updating Database
     const changeTime = new Date(Date.now()).toISOString();
     const status = "requested";
-    const mediaS3Path = s3Bucket + mediaKey;
-    let createSuccess = true;
+    const mediaS3Path = `${s3Bucket}/${mediaKey}`;
     await createAnnouncement("title, body, media, datefrom, dateto, userid, status, priority, lastchangetime, lastchangeuser, creationtime", `'${req.body.title}', '${req.body.body}', '${mediaS3Path}', '${req.body.datefrom}', '${req.body.dateto}', '1', '${status}', '${req.body.priority}', '${changeTime}', '1', '${changeTime}'`).then((query) => {
         responseBody['announcementId'] = query.rows[0].announcementId;
         responseBody['status'] = status;
     }).catch((err) => {
-        createSuccess = false;
+        dbSuccess = false;
         responseBody['Create'] = "Failed";
         console.log(err);
     });
 
     // Send Response
-    if (uploadSuccess && createSuccess){
+    if (dbSuccess && s3Success){
         res.status(200).send(responseBody);
     } else {
         res.status(500).send(responseBody);
@@ -140,7 +141,7 @@ router.post('/', async function(req, res, next) {
 
 // get endpoint for particular announcement
 router.get('/:announcementId', async function(req, res, next) {
-    getAnnouncements(`announcementid = '${req.params.announcementId}'`).then((query) => {
+    await getAnnouncements(`announcementid = '${req.params.announcementId}'`).then((query) => {
         console.log(query.rows.length);
         if (query.rows.length < 1) {
             res.status(404).send({error: `Announcement with id ${req.params.announcementId} not found`});
@@ -170,29 +171,43 @@ router.put('/:announcementId', async function(req, res, next) {
             }
         }
     }
+
+    dbSuccess = true;
+    s3Success = true;
+
     await updateAnnouncement("lastchangetime", new Date(Date.now()).toISOString(), req.params.announcementId).catch((err) => {
-        res.status(500).send({ error: 'Unknown error.' });
+        responseBody['Error'] = 'Unknown Error Updating Announcement';
     });
     if (res.statusCode === 500) {
         return;
     }
-    getAnnouncements(`announcementid = '${req.params.announcementId}'`).then((query) => {
-        res.status(200).write({ announcementId: req.params.announcementId, status: query.rows[0].status });
+
+    await getAnnouncements(`announcementid = '${req.params.announcementId}'`).then((query) => {
+        responseBody['announcementId'] = req.params.announcementId;
+        responseBody['status'] = query.rows[0].status;
     }).catch((err) => {
-        res.status(500).write({ error: 'Unknown error.' });
+        responseBody['Error'] = 'Unknown Error Getting Announcement';
     });
 
     // edit object in s3 if media has changed
-    // is there a need to delete the old object from s3? since the s3 path in db changed, the old one won't be referenced anymore
-    if (req.body.hasOwnProperty('media')){
-        uploadObjectToS3(s3Object, s3Bucket, req.body.media, req.body.media).then(() => {
-            res.status(200).write({ uploaded : key});
+    if (req.body.media){
+        var mediaKey = `assets/someid/${path.basename(req.body.media)}`;
+
+        await uploadObjectToS3(s3Object, s3Bucket, mediaKey, req.body.media).then(() => {
+            responseBody['Upload New Media'] = 'Success';
         }).catch((err) => {
-            res.status(500).write({ error: 'New Media Failed to Upload' });
+            uploadSuccess = false;
+            responseBody['Upload New Media'] = 'Failed';
+            console.log(err);
         });
     }
 
-    res.end();
+    // Send Response
+    if (s3Success && dBSuccess){
+        res.status(200).send(responseBody);
+    } else {
+        res.status(500).send(responseBody);
+    }
 
 });
 
@@ -202,9 +217,17 @@ router.delete('/:announcementId', async function(req, res, next) {
     let s3Success = true;
     let dBSuccess = true;
 
+    // getting media associated with announcement
+    let s3Path = '';
+    await getAnnouncements(`announcementid = '${req.params.announcementId}'`).then((query) => {
+        s3Path = query.rows[0].media;
+    }).catch((err) => {
+        console.log(err);
+    });
+
     // deleteing object from s3 bucket
-    if (req.params.key) {
-        await deleteS3Object(s3Object, s3Bucket, req.params.key).then(() => {
+    if (s3Path) {
+        await deleteS3Object(s3Object, s3Path).then(() => {
             responseBody["S3 Deletion"] = ['Success'];
         }).catch((err) => {
             s3Success = false;
@@ -232,7 +255,6 @@ router.delete('/:announcementId', async function(req, res, next) {
     } else {
         res.status(500).send(responseBody);
     }
-    
 });
 
 module.exports = router;

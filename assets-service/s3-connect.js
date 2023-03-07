@@ -39,8 +39,14 @@ async function uploadObjectToS3(s3, bucket, key, file) {
     return result;
 }
 
-async function deleteS3Object(s3, bucket, key) {
+async function deleteS3Object(s3, s3Path) {
 
+    const pathParts = s3Path.split('/');
+    let bucket = pathParts.slice(0, 2);
+    bucket = bucket.join('/');
+    let key = pathParts.slice(2, pathParts.length);
+    key = key.join('/');
+    
     const params = {
         Bucket: bucket,
         Key: key
@@ -57,7 +63,13 @@ async function deleteS3Object(s3, bucket, key) {
     return result;
 }
 
-async function getS3Object(s3, bucket, key) {
+async function getS3Object(s3, s3Path) {
+    
+    const pathParts = s3Path.split('/');
+    let bucket = pathParts.slice(0, 2);
+    bucket = bucket.join('/');
+    let key = pathParts.slice(2, pathParts.length);
+    key = key.join('/');
 
     const params = {
         Bucket: bucket,
