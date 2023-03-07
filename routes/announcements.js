@@ -9,6 +9,8 @@ const {
     updateAnnouncement,
     deleteAnnouncement
 } = require('../db/db-announcements-interface');
+const { logAction } = require('../services/log/auditlog');
+const cloudWatchLogger = require('../services/log/cloudwatch');
 
 const GET_QUERY_PARAMS = ["category", "datefrom", "dateto", "status"];
 const POST_BODY_FORMAT = {
@@ -75,6 +77,7 @@ router.get('/', async function(req, res, next) {
     await getAnnouncements(query).then((query) => {
         res.status(200).send(query.rows);
     }).catch((err) => {
+        cloudWatchLogger.logger.error(err);
         res.status(500).send({ error: 'Unknown error.' });
     })
 });
@@ -128,7 +131,7 @@ router.post('/', async function(req, res, next) {
     }).catch((err) => {
         dbSuccess = false;
         responseBody['Create'] = "Failed";
-        console.log(err);
+        cloudWatchLogger.logger.error(err);
     });
 
     // Send Response
@@ -149,6 +152,7 @@ router.get('/:announcementId', async function(req, res, next) {
             res.status(200).send(query.rows[0]);
         }
     }).catch((err) => {
+        cloudWatchLogger.logger.error(err);
         res.status(500).send({error: 'Unknown error.'});
     });
 });
@@ -163,8 +167,12 @@ router.put('/:announcementId', async function(req, res, next) {
                 return;
             } else {
                 await updateAnnouncement(prop, req.body[prop], req.params.announcementId).catch((err) => {
+                    cloudWatchLogger.logger.error(err);
                     res.status(500).send({ error: 'Unknown error.' });
                 });
+                if (prop === "status") {
+                    await logAction(req.body.status, req.params.announcementId, '1');
+                }
                 if (res.statusCode === 500) {
                     return;
                 }
@@ -187,6 +195,7 @@ router.put('/:announcementId', async function(req, res, next) {
         responseBody['status'] = query.rows[0].status;
     }).catch((err) => {
         responseBody['Error'] = 'Unknown Error Getting Announcement';
+        cloudWatchLogger.logger.error(err);
     });
 
     // edit object in s3 if media has changed
@@ -246,7 +255,7 @@ router.delete('/:announcementId', async function(req, res, next) {
     }).catch((err) => {
         dBSuccess = false;
         responseBody["DB Deletion"] = ['Unknown error.'];
-        console.log(err);
+        cloudWatchLogger.logger.error(err);
     });
 
     // Send Response

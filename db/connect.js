@@ -3,6 +3,7 @@
 require('dotenv').config();
 const { json } = require('express');
 const { Pool } = require('pg');
+const cloudWatchLogger = require('../services/log/cloudwatch');
 
 const pool = new Pool({
   host: process.env.POSTGRES_HOST,
@@ -25,7 +26,7 @@ async function executeQuery(queryString) {
     res = await client.query(queryString);
     await client.release();
   } catch (error) {
-    console.log(error); 
+    cloudWatchLogger.logger.log('error', error);
   }
   // console.log(res.rows);
   
