@@ -7,7 +7,7 @@ async function getAnnouncements(query = "") {
     if (query.length > 0) {
         selectAnnouncements += ` WHERE ${query};`;
     }
-    return executeQuery(selectUserById);
+
     return await executeQuery(selectAnnouncements);
   }
     
