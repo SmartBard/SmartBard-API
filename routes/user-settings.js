@@ -45,13 +45,12 @@ router.post('/', async function(req, res, next) {
     }
   }
   const userId = `1`; // hardcoded for now
-  const fields = 'userid, textsize, brightness, contrast, volume, delay, primarycolor, secondarycolor';
-  const values = `'${userId}', ${req.body.textsize}, ${req.body.brightness}, ${req.body.contrast}, ${req.body.volume}, ${req.body.delay}, '${req.body.primarycolor}', '${req.body.secondarycolor}'`;
+  const values = [userId, req.body.textsize, req.body.brightness, req.body.contrast, req.body.volume, req.body.delay, req.body.primarycolor, req.body.secondarycolor];
   getUserSettings(userId).then((query) => {
     if (query.rows.length > 0) {
       res.status(400).send({ error: `Settings already exist for user ${userId}` });
     } else {
-      createUserSettings(fields, values).then((query) => {
+      createUserSettings(values).then((query) => {
         res.status(200).send({ settingsid: query.rows[0].settingsid });
       }).catch((err) => {
         cloudWatchLogger.logger.error(err);
