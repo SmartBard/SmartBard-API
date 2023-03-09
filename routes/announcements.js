@@ -35,7 +35,7 @@ const {
     uploadObjectToS3,
     deleteS3Object,
     getS3Object
-} = require('../assets-service/s3-connect');
+} = require('../services/assets/s3-connect');
 
 //temp values
 var s3Object = createS3Object(process.env.AWS_ACCESS_KEY, process.env.AWS_SECRET_KEY);
@@ -100,7 +100,7 @@ router.post('/', async function(req, res, next) {
     let s3Success = true;
     let dbSuccess = true;
 
-    // Uploading media to s3 bucket
+    // Uploading media to assets bucket
     let responseBody = {};
     let mediaKey = '';
     if (req.body.media) {
@@ -201,7 +201,7 @@ router.put('/:announcementId', async function(req, res, next) {
         return;
     }
 
-    // edit object in s3 if media has changed
+    // edit object in assets if media has changed
     if (req.body.media){
         const mediaKey = `assets/someid/${path.basename(req.body.media)}`;
 
@@ -238,7 +238,7 @@ router.delete('/:announcementId', async function(req, res, next) {
         cloudWatchLogger.logger.error(err);
     });
 
-    // deleteing object from s3 bucket
+    // deleteing object from assets bucket
     if (s3Path) {
         await deleteS3Object(s3Object, s3Path).then(() => {
             responseBody["S3 Deletion"] = ['Success'];
