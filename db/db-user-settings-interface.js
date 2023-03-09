@@ -4,28 +4,46 @@ const {
 } = require('./connect');
 
 async function getUserSettings(user) {
-  let selectUserSettings = `SELECT * FROM usersettings WHERE userid = ${user};`;
-  return await executeQuery(selectUserSettings);
+  const selectQuery = {
+    text: 'SELECT * FROM usersettings WHERE userid = $1;',
+    values: [user]
+  }
+  return await executeQuery(selectQuery);
 }
 
 async function getUserSettingsById(settingsId) {
-  const selectSettingById = `SELECT * FROM usersettings WHERE settingsid = ${settingsId};`;
-  return await executeQuery(selectSettingById);
+  const selectByIdQuery = {
+    text: 'SELECT * FROM usersettings WHERE settingsid = $1;',
+    values: [settingsId]
+  }
+  return await executeQuery(selectByIdQuery);
 }
 
-async function createUserSettings(columns, values) {
-  const insertUserSettings = `INSERT INTO usersettings (${columns}) VALUES (${values}) RETURNING *;`;
-  return await executeQuery(insertUserSettings);
+async function createUserSettings(vals) {
+  if (vals.length !== 8) {
+    throw new Error('Invalid parameter.');
+  }
+  const insertQuery = {
+    text: 'INSERT INTO usersettings (userid, textsize, brightness, contrast, volume, delay, primarycolor, secondarycolor) VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING *;',
+    values: vals
+  }
+  return await executeQuery(insertQuery);
 }
 
 async function updateUserSettings(column, newValue, userId) {
-  const setUserSettings = `UPDATE usersettings SET ${column} = ${newValue} WHERE userid = ${userId};`;
-  return await executeQuery(setUserSettings);
+  const updateQuery = {
+    text: `UPDATE usersettings SET ${column} = $1 WHERE userid = $2;`,
+    values: [newValue, userId]
+  }
+  return await executeQuery(updateQuery);
 }
 
 async function deleteUserSettings(userId) {
-  const deleteSetting = `DELETE FROM usersettings WHERE userId = ${userId} RETURNING *;`;
-  return await executeQuery(deleteSetting);
+  const deleteQuery = {
+    text: 'DELETE FROM usersettings WHERE userId = $1 RETURNING *;',
+    values: [userId]
+  }
+  return await executeQuery(deleteQuery);
 }
 
 module.exports = {

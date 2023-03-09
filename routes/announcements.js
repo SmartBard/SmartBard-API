@@ -9,6 +9,7 @@ const {
     updateAnnouncement,
     deleteAnnouncement
 } = require('../db/db-announcements-interface');
+const { removeLogsOfAnnouncement } = require('../db/db-auditlog-interface');
 const { logAction } = require('../services/log/auditlog');
 const cloudWatchLogger = require('../services/log/cloudwatch');
 
@@ -42,39 +43,30 @@ const s3Bucket = 'arn:aws:s3:us-east-1:013130384093:accesspoint/smbd-test-point'
 
 // get endpoint for all announcements
 router.get('/', async function(req, res, next) {
-    let query = "";
     // validating query parameters
+    let cols = [];
+    let vals = [];
     for (const prop in req.query) {
         if (req.query.hasOwnProperty(prop)) {
             if (!GET_QUERY_PARAMS.includes(prop)) {
                 res.status(400).send({ error: `Invalid query parameter: ${prop}` });
                 return;
             }
-            if (query.length !== 0) {
-                query += " AND ";
-            }
-            if (prop === "datefrom") {
-                query += `datefrom > '${req.query[prop]}'`;
-            } else if (prop === "dateto") {
-                query += `dateto < '${req.query[prop]}'`;
-            } else {
-                query += `${prop} = '${req.query[prop]}'`
-            }
+            cols.push(prop);
+            vals.push(req.query[prop]);
         }
     }
-    if (!query.includes("datefrom") || !query.includes("dateto")) {
-        if (query.length !== 0) {
-            query += " AND ";
-        }
-        query += `datefrom < now() AND dateto > now()`;
+    if (!cols.includes("datefrom") || !cols.includes("dateto")) {
+        cols.push('datefrom');
+        vals.push(null);
+        cols.push('dateto');
+        vals.push(null);
     }
-    if (!query.includes("status")) {
-        if (query.length !== 0) {
-            query += " AND ";
-        }
-        query += `status = 'approved'`;
+    if (!cols.includes("status")) {
+        cols.push('status');
+        vals.push('approved');
     }
-    await getAnnouncements(query).then((query) => {
+    await getAnnouncements(cols, vals).then((query) => {
         res.status(200).send(query.rows);
     }).catch((err) => {
         cloudWatchLogger.logger.error(err);
@@ -109,9 +101,10 @@ router.post('/', async function(req, res, next) {
     let dbSuccess = true;
 
     // Uploading media to s3 bucket
-    var responseBody = new Object();
+    let responseBody = {};
+    let mediaKey = '';
     if (req.body.media) {
-        var mediaKey = `assets/someid/${path.basename(req.body.media)}`;
+        mediaKey = `assets/someid/${path.basename(req.body.media)}`;
         await uploadObjectToS3(s3Object, s3Bucket, mediaKey, req.body.media).then(() => {
             responseBody['Upload'] = 'Success';
         }).catch((err) => {
@@ -119,23 +112,25 @@ router.post('/', async function(req, res, next) {
             responseBody['Upload'] = 'Failed';
             console.log(err);
         });
-    };
+    }
     
     // Updating Database
     const changeTime = new Date(Date.now()).toISOString();
     const status = "requested";
     const mediaS3Path = `${s3Bucket}/${mediaKey}`;
-    await createAnnouncement("title, body, media, datefrom, dateto, userid, status, priority, lastchangetime, lastchangeuser, creationtime", `'${req.body.title}', '${req.body.body}', '${mediaS3Path}', '${req.body.datefrom}', '${req.body.dateto}', '1', '${status}', '${req.body.priority}', '${changeTime}', '1', '${changeTime}'`).then((query) => {
-        responseBody['announcementId'] = query.rows[0].announcementId;
+    const vals = [req.body.title, req.body.body, mediaS3Path, req.body.datefrom, req.body.dateto, '1', status, req.body.priority, changeTime, '1', changeTime];
+    await createAnnouncement(vals).then(async (query) => {
+        await logAction(status, query.rows[0].announcementid, '1');
+        responseBody['announcementId'] = query.rows[0].announcementid;
         responseBody['status'] = status;
     }).catch((err) => {
         dbSuccess = false;
         responseBody['Create'] = "Failed";
         cloudWatchLogger.logger.error(err);
+        console.log(err);
     });
 
-    // Send Response
-    if (dbSuccess && s3Success){
+    if (dbSuccess && s3Success) {
         res.status(200).send(responseBody);
     } else {
         res.status(500).send(responseBody);
@@ -144,8 +139,7 @@ router.post('/', async function(req, res, next) {
 
 // get endpoint for particular announcement
 router.get('/:announcementId', async function(req, res, next) {
-    await getAnnouncements(`announcementid = '${req.params.announcementId}'`).then((query) => {
-        console.log(query.rows.length);
+    await getAnnouncements(['announcementid'], [req.params.announcementId]).then((query) => {
         if (query.rows.length < 1) {
             res.status(404).send({error: `Announcement with id ${req.params.announcementId} not found`});
         } else {
@@ -153,6 +147,7 @@ router.get('/:announcementId', async function(req, res, next) {
         }
     }).catch((err) => {
         cloudWatchLogger.logger.error(err);
+        console.log(err);
         res.status(500).send({error: 'Unknown error.'});
     });
 });
@@ -182,25 +177,33 @@ router.put('/:announcementId', async function(req, res, next) {
 
     dbSuccess = true;
     s3Success = true;
+    let responseBody = {};
 
     await updateAnnouncement("lastchangetime", new Date(Date.now()).toISOString(), req.params.announcementId).catch((err) => {
         responseBody['Error'] = 'Unknown Error Updating Announcement';
+        cloudWatchLogger.logger.error(err);
+        console.log(err);
+        res.status(500).send(responseBody);
     });
     if (res.statusCode === 500) {
         return;
     }
 
-    await getAnnouncements(`announcementid = '${req.params.announcementId}'`).then((query) => {
+    await getAnnouncements(['announcementid'], [req.params.announcementId]).then((query) => {
         responseBody['announcementId'] = req.params.announcementId;
         responseBody['status'] = query.rows[0].status;
     }).catch((err) => {
         responseBody['Error'] = 'Unknown Error Getting Announcement';
         cloudWatchLogger.logger.error(err);
+        res.status(500).send({ error: 'Unknown error.' });
     });
+    if (res.statusCode === 500) {
+        return;
+    }
 
     // edit object in s3 if media has changed
     if (req.body.media){
-        var mediaKey = `assets/someid/${path.basename(req.body.media)}`;
+        const mediaKey = `assets/someid/${path.basename(req.body.media)}`;
 
         await uploadObjectToS3(s3Object, s3Bucket, mediaKey, req.body.media).then(() => {
             responseBody['Upload New Media'] = 'Success';
@@ -212,7 +215,7 @@ router.put('/:announcementId', async function(req, res, next) {
     }
 
     // Send Response
-    if (s3Success && dBSuccess){
+    if (s3Success && dbSuccess){
         res.status(200).send(responseBody);
     } else {
         res.status(500).send(responseBody);
@@ -222,16 +225,17 @@ router.put('/:announcementId', async function(req, res, next) {
 
 // delete endpoint to remove announcements
 router.delete('/:announcementId', async function(req, res, next) {
-    var responseBody = new Object();
+    let responseBody = {};
     let s3Success = true;
     let dBSuccess = true;
 
     // getting media associated with announcement
     let s3Path = '';
-    await getAnnouncements(`announcementid = '${req.params.announcementId}'`).then((query) => {
+    await getAnnouncements(['announcementid'], [req.params.announcementId]).then((query) => {
         s3Path = query.rows[0].media;
     }).catch((err) => {
         console.log(err);
+        cloudWatchLogger.logger.error(err);
     });
 
     // deleteing object from s3 bucket
@@ -242,9 +246,15 @@ router.delete('/:announcementId', async function(req, res, next) {
             s3Success = false;
             responseBody["S3 Deletion"] = ['Failed'];
             console.log(err);
+            cloudWatchLogger.logger.error(err);
         });
     }
-
+    // deleting announcements also requires to remove all logs related to it
+    await removeLogsOfAnnouncement(req.params.announcementId).catch((err) => {
+        cloudWatchLogger.logger.error(err);
+        console.log(err);
+        res.status(500).send({ error: 'Unknown error.' });
+    });
     await deleteAnnouncement(req.params.announcementId).then((query) => {
         if (query.rows.length < 1) {
             dBSuccess = false;
@@ -256,6 +266,7 @@ router.delete('/:announcementId', async function(req, res, next) {
         dBSuccess = false;
         responseBody["DB Deletion"] = ['Unknown error.'];
         cloudWatchLogger.logger.error(err);
+        console.log(err);
     });
 
     // Send Response
