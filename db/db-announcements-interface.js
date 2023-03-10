@@ -38,7 +38,6 @@ async function getAnnouncements(cols, vals) {
             }
         }
     }
-    console.log(text);
     const selectQuery = {
         text: `${text};`,
         values: values,
