@@ -5,6 +5,7 @@ const logger = require('morgan');
 const xray = require('aws-xray-sdk');
 const cors = require('cors');
 const cloudWatchLogger = require('./services/log/cloudwatch');
+const tokenValidator = require('./services/auth/token-validation');
 
 const indexRouter = require('./routes/index');
 const userSettingsRouter = require('./routes/user-settings');
@@ -30,6 +31,14 @@ const port = process.env['NODE_PORT'] || 3000;
 
 cloudWatchLogger.initializeLogger();
 
+app.use(async (req, res, next) => {
+  if (await tokenValidator.isValidToken(req.header('Authorization') ? req.header('Authorization') : "")) {
+    next();
+  } else {
+    res.status(401).send({ error: 'Unauthorized.' });
+    return;
+  }
+});
 app.use(cors({
   origin: ['http://localhost:3000', 'https://dev.smartbard.durkin.app', 'https://prod.smartbard.durkin.app', 'https://smartbard.durkin.app', 'http://localhost:3000']
 }));

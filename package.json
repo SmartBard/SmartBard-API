@@ -6,6 +6,7 @@
     "start": "node app.js"
   },
   "dependencies": {
+    "aws-jwt-verify": "^3.4.0",
     "aws-sdk": "^2.1326.0",
     "aws-xray-sdk": "^3.4.1",
     "cookie-parser": "~1.4.4",
