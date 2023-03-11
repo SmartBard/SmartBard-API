@@ -11,6 +11,7 @@ const userSettingsRouter = require('./routes/user-settings');
 const tempRouter = require('./routes/temp');
 const announcementsRouter = require('./routes/announcements');
 const auditLogRouter = require('./routes/auditlog');
+const assetsRouter = require('./routes/assets');
 const usersRouter = require('./routes/users');
 
 const {
@@ -46,6 +47,7 @@ app.use('/', indexRouter);
 app.use('/user-settings', userSettingsRouter);
 app.use('/announcements', announcementsRouter);
 app.use('/auditlog', auditLogRouter);
+app.use('/assets', assetsRouter);
 app.use('/users', usersRouter);
 app.use('/end', tempRouter);
 

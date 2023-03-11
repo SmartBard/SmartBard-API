@@ -17,9 +17,9 @@ function createS3Object(accessToken, secretKey) {
     return s3
 }
 
-async function uploadObjectToS3(s3, bucket, key, file) {
+async function uploadObjectToS3(s3, bucket, key) {
 
-    var imagePath = path.join(__dirname, file);
+    var imagePath = path.join(process.cwd(), key);
     var imageBuffer = fs.readFileSync(imagePath);
 
     var params = {

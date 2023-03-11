@@ -18,10 +18,10 @@ function initializeLogger() {
             logStreamName: `${process.env.CLOUDWATCH_GROUP_NAME}-${process.env.NODE_ENV}`,
             awsOptions: {
                 credentials: {
-                    accessKeyId: process.env.CLOUDWATCH_ACCESS_KEY_ID,
-                    secretAccessKey: process.env.CLOUDWATCH_SECRET_ACCESS_KEY,
+                    accessKeyId: process.env.AWS_ACCESS_KEY_ID,
+                    secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
                 },
-                region: process.env.CLOUDWATCH_REGION,
+                region: process.env.AWS_REGION,
             },
             messageFormatter: ({ level, message, additionalInfo }) => {
                 return `[${level}] : ${message} \nAdditional Info: ${JSON.stringify(additionalInfo)}}`
