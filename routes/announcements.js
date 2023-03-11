@@ -1,5 +1,6 @@
 const express = require('express');
 const path = require('path');
+const fs = require('fs');
 
 const router = express.Router();
 
@@ -13,10 +14,11 @@ const { removeLogsOfAnnouncement } = require('../db/db-auditlog-interface');
 const { logAction } = require('../services/log/auditlog');
 const cloudWatchLogger = require('../services/log/cloudwatch');
 
-const GET_QUERY_PARAMS = ["category", "datefrom", "dateto", "status"];
+const GET_QUERY_PARAMS = ["category", "datefrom", "dateto", "status", "priority"];
 const POST_BODY_FORMAT = {
     "title": "string",
     "body": "string",
+    "media": "string",
     "datefrom": "string",
     "dateto": "string",
     "priority": "boolean"
@@ -24,6 +26,7 @@ const POST_BODY_FORMAT = {
 const PUT_BODY_FORMAT = {
     "title": "string",
     "body": "string",
+    "media": "string",
     "datefrom": "string",
     "dateto": "string",
     "priority": "boolean",
@@ -38,7 +41,7 @@ const {
 } = require('../services/assets/s3-connect');
 
 //temp values
-var s3Object = createS3Object(process.env.AWS_ACCESS_KEY, process.env.AWS_SECRET_KEY);
+var s3Object = createS3Object(process.env.AWS_ACCESS_KEY_ID, process.env.AWS_SECRET_ACCESS_KEY);
 const s3Bucket = 'arn:aws:s3:us-east-1:013130384093:accesspoint/smbd-test-point';
 
 // get endpoint for all announcements
@@ -56,7 +59,7 @@ router.get('/', async function(req, res, next) {
             vals.push(req.query[prop]);
         }
     }
-    if (!cols.includes("datefrom") || !cols.includes("dateto")) {
+    if (!cols.includes("datefrom") && !cols.includes("dateto")) {
         cols.push('datefrom');
         vals.push(null);
         cols.push('dateto');
@@ -104,9 +107,10 @@ router.post('/', async function(req, res, next) {
     let responseBody = {};
     let mediaKey = '';
     if (req.body.media) {
-        mediaKey = `assets/someid/${path.basename(req.body.media)}`;
-        await uploadObjectToS3(s3Object, s3Bucket, mediaKey, req.body.media).then(() => {
+        mediaKey = `uploaded-assets/media/${path.basename(req.body.media)}`;
+        await uploadObjectToS3(s3Object, s3Bucket, mediaKey).then(() => {
             responseBody['Upload'] = 'Success';
+            fs.rmSync(path.join(process.cwd(), `uploaded-assets/media/${path.basename(req.body.media)}`));
         }).catch((err) => {
             s3Success = false;
             responseBody['Upload'] = 'Failed';
@@ -203,10 +207,12 @@ router.put('/:announcementId', async function(req, res, next) {
 
     // edit object in assets if media has changed
     if (req.body.media){
-        const mediaKey = `assets/someid/${path.basename(req.body.media)}`;
+        const mediaKey = `uploaded-assets/media/${path.basename(req.body.media)}`;
 
-        await uploadObjectToS3(s3Object, s3Bucket, mediaKey, req.body.media).then(() => {
+        await uploadObjectToS3(s3Object, s3Bucket, mediaKey, req.body.media).then(async () => {
             responseBody['Upload New Media'] = 'Success';
+            fs.rmSync(path.join(process.cwd(), mediaKey));
+            await updateAnnouncement('media', `${s3Bucket}/${mediaKey}`, req.params.announcementId);
         }).catch((err) => {
             uploadSuccess = false;
             responseBody['Upload New Media'] = 'Failed';
