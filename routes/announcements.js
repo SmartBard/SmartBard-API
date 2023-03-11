@@ -122,7 +122,7 @@ router.post('/', async function(req, res, next) {
 
     const email = await tokenValidator.getUserEmailFromToken(req.header('Authorization').split(' ')[1]); // hardcoded but should be valid due to middleware
     let userId = await getUserByEmail(email).then((query) => {
-        if (query.rows > 0) {
+        if (query.rows.length > 0) {
             return query.rows[0].userid;
         } else {
             return "";
@@ -140,7 +140,7 @@ router.post('/', async function(req, res, next) {
     // Updating Database
     const changeTime = new Date(Date.now()).toISOString();
     const status = "requested";
-    const mediaS3Path = `${s3Bucket}/${mediaKey}`;
+    const mediaS3Path = mediaKey.length > 0 ? `${s3Bucket}/${mediaKey}` : '';
     const vals = [req.body.title, req.body.body, mediaS3Path, req.body.datefrom, req.body.dateto, userId, status, req.body.priority, changeTime, userId, changeTime];
     await createAnnouncement(vals).then(async (query) => {
         await logAction(status, query.rows[0].announcementid, '1');
@@ -204,7 +204,7 @@ router.put('/:announcementId', async function(req, res, next) {
 
     const email = await tokenValidator.getUserEmailFromToken(req.header('Authorization').split(' ')[1]); // hardcoded but should be valid due to middleware
     let userId = await getUserByEmail(email).then((query) => {
-        if (query.rows > 0) {
+        if (query.rows.length > 0) {
             return query.rows[0].userid;
         } else {
             return "";
