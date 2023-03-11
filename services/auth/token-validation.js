@@ -11,8 +11,6 @@ const verifier = CognitoJwtVerifier.create({
 async function isValidToken(header) {
     const tokenHeader = header.split(' ');
     if (tokenHeader.length !== 2 || tokenHeader[0] !== 'Bearer') {
-        console.log('fail here');
-        console.log(tokenHeader);
         return false;
     }
     try {
@@ -46,7 +44,6 @@ async function initializeUserIfNotExist(jwtPayload) {
         return false;
     });
     if (user === null) {
-        console.log('user null');
         return false;
     }
     const cognitoId = jwtPayload['cognito:username'];
@@ -56,7 +53,6 @@ async function initializeUserIfNotExist(jwtPayload) {
     const isAdmin = jwtPayload['cognito:groups'].includes('Admin');
     if (Object.keys(user).length < 1) {
         return await createNewUser([cognitoId, firstName, lastName, email, isAdmin]).then((query) => {
-            console.log(query.rows.length > 0);
             return query.rows.length > 0;
         }).catch((err) => {
             console.log(err);
