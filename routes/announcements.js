@@ -1,6 +1,7 @@
 const express = require('express');
 const path = require('path');
 const fs = require('fs');
+const tokenValidator = require('../services/auth/token-validation');
 
 const router = express.Router();
 
@@ -39,6 +40,7 @@ const {
     deleteS3Object,
     getS3Object
 } = require('../services/assets/s3-connect');
+const {getUserByEmail} = require("../db/db-user-interface");
 
 //temp values
 var s3Object = createS3Object(process.env.AWS_ACCESS_KEY_ID, process.env.AWS_SECRET_ACCESS_KEY);
@@ -117,12 +119,29 @@ router.post('/', async function(req, res, next) {
             console.log(err);
         });
     }
+
+    const email = await tokenValidator.getUserEmailFromToken(req.header('Authorization').split(' ')[1]); // hardcoded but should be valid due to middleware
+    let userId = await getUserByEmail(email).then((query) => {
+        if (query.rows > 0) {
+            return query.rows[0].userid;
+        } else {
+            return "";
+        }
+    }).catch((err) => {
+        res.status(500).send({ error: 'Unknown error' });
+        cloudWatchLogger.logger.error(err);
+        console.log(err);
+        return "";
+    });
+    if (res.statusCode === 500) {
+        return;
+    }
     
     // Updating Database
     const changeTime = new Date(Date.now()).toISOString();
     const status = "requested";
     const mediaS3Path = `${s3Bucket}/${mediaKey}`;
-    const vals = [req.body.title, req.body.body, mediaS3Path, req.body.datefrom, req.body.dateto, '1', status, req.body.priority, changeTime, '1', changeTime];
+    const vals = [req.body.title, req.body.body, mediaS3Path, req.body.datefrom, req.body.dateto, userId, status, req.body.priority, changeTime, userId, changeTime];
     await createAnnouncement(vals).then(async (query) => {
         await logAction(status, query.rows[0].announcementid, '1');
         responseBody['announcementId'] = query.rows[0].announcementid;
@@ -183,7 +202,34 @@ router.put('/:announcementId', async function(req, res, next) {
     s3Success = true;
     let responseBody = {};
 
+    const email = await tokenValidator.getUserEmailFromToken(req.header('Authorization').split(' ')[1]); // hardcoded but should be valid due to middleware
+    let userId = await getUserByEmail(email).then((query) => {
+        if (query.rows > 0) {
+            return query.rows[0].userid;
+        } else {
+            return "";
+        }
+    }).catch((err) => {
+        res.status(500).send({ error: 'Unknown error' });
+        cloudWatchLogger.logger.error(err);
+        console.log(err);
+        return "";
+    });
+    if (res.statusCode === 500) {
+        return;
+    }
+
     await updateAnnouncement("lastchangetime", new Date(Date.now()).toISOString(), req.params.announcementId).catch((err) => {
+        responseBody['Error'] = 'Unknown Error Updating Announcement';
+        cloudWatchLogger.logger.error(err);
+        console.log(err);
+        res.status(500).send(responseBody);
+    });
+    if (res.statusCode === 500) {
+        return;
+    }
+
+    await updateAnnouncement("lastchangeuser", userId, req.params.announcementId).catch((err) => {
         responseBody['Error'] = 'Unknown Error Updating Announcement';
         cloudWatchLogger.logger.error(err);
         console.log(err);
