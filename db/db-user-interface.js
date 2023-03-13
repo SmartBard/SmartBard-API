@@ -26,14 +26,26 @@ async function createNewUser(vals) {
     throw new Error('Invalid parameter');
   }
   const insertQuery = {
-    text: 'INSERT INTO USERS (cognitoid, firstname, lastname, email, admin) VALUES ($1, $2, $3, $4, $5) RETURNING *;',
+    text: 'INSERT INTO users (cognitoid, firstname, lastname, email, admin) VALUES ($1, $2, $3, $4, $5) RETURNING *;',
     values: vals
   }
   return await executeQuery(insertQuery);
 }
 
+async function updateUser(vals) {
+  if (vals.length !== 4) {
+    throw new Error('Invalid parameter');
+  }
+  const updateQuery = {
+    text: 'UPDATE users SET firstname = $1, lastname = $2, admin = $3 WHERE email = $4 RETURNING *;',
+    values: vals,
+  };
+  return await executeQuery(updateQuery);
+}
+
 module.exports = {
   getUserById,
   getUserByEmail,
-  createNewUser
+  createNewUser,
+  updateUser
 }
