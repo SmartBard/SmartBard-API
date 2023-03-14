@@ -13,7 +13,7 @@ const pool = new Pool({
   database: process.env.POSTGRES_DATABASE,
   // max: // This allows us to specify max clients?
   idleTimeoutMillis: 30000,
-  connectionTimeoutMillis: 2000,
+  connectionTimeoutMillis: 20000,
 });
 
 async function executeQuery(queryString) {
