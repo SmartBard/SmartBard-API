@@ -143,7 +143,7 @@ router.post('/', async function(req, res, next) {
     const mediaS3Path = mediaKey.length > 0 ? `${s3Bucket}/${mediaKey}` : '';
     const vals = [req.body.title, req.body.body, mediaS3Path, req.body.datefrom, req.body.dateto, userId, status, req.body.priority, changeTime, userId, changeTime];
     await createAnnouncement(vals).then(async (query) => {
-        await logAction(status, query.rows[0].announcementid, '1');
+        await logAction(status, query.rows[0].announcementid, userId);
         responseBody['announcementId'] = query.rows[0].announcementid;
         responseBody['status'] = status;
     }).catch((err) => {
@@ -177,31 +177,6 @@ router.get('/:announcementId', async function(req, res, next) {
 
 // put endpoint to edit a particular announcement
 router.put('/:announcementId', async function(req, res, next) {
-    // validating request body
-    for (const prop in req.body) {
-        if (req.body.hasOwnProperty(prop)) {
-            if (!(prop in PUT_BODY_FORMAT)) {
-                res.status(400).send({error: `Invalid body property: ${prop}`});
-                return;
-            } else {
-                await updateAnnouncement(prop, req.body[prop], req.params.announcementId).catch((err) => {
-                    cloudWatchLogger.logger.error(err);
-                    res.status(500).send({ error: 'Unknown error.' });
-                });
-                if (prop === "status") {
-                    await logAction(req.body.status, req.params.announcementId, '1');
-                }
-                if (res.statusCode === 500) {
-                    return;
-                }
-            }
-        }
-    }
-
-    dbSuccess = true;
-    s3Success = true;
-    let responseBody = {};
-
     const email = await tokenValidator.getUserEmailFromToken(req.header('Authorization').split(' ')[1]); // hardcoded but should be valid due to middleware
     let userId = await getUserByEmail(email).then((query) => {
         if (query.rows.length > 0) {
@@ -218,6 +193,30 @@ router.put('/:announcementId', async function(req, res, next) {
     if (res.statusCode === 500) {
         return;
     }
+    // validating request body
+    for (const prop in req.body) {
+        if (req.body.hasOwnProperty(prop)) {
+            if (!(prop in PUT_BODY_FORMAT)) {
+                res.status(400).send({error: `Invalid body property: ${prop}`});
+                return;
+            } else {
+                await updateAnnouncement(prop, req.body[prop], req.params.announcementId).catch((err) => {
+                    cloudWatchLogger.logger.error(err);
+                    res.status(500).send({ error: 'Unknown error.' });
+                });
+                if (prop === "status") {
+                    await logAction(req.body.status, req.params.announcementId, userId);
+                }
+                if (res.statusCode === 500) {
+                    return;
+                }
+            }
+        }
+    }
+
+    dbSuccess = true;
+    s3Success = true;
+    let responseBody = {};
 
     await updateAnnouncement("lastchangetime", new Date(Date.now()).toISOString(), req.params.announcementId).catch((err) => {
         responseBody['Error'] = 'Unknown Error Updating Announcement';
