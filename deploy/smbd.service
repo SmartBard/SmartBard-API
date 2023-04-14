@@ -1,0 +1,15 @@
+[Unit]
+Description=SmartBard API Service
+After=network.target
+StartLimitIntervalSec=0
+WorkingDirectory=/opt/smbd/SmartBard-API
+
+[Service]
+Type=simple
+Restart=always
+RestartSec=5
+User=root
+ExecStart=/usr/bin/node app.js
+
+[Install]
+WantedBy=multi-user.target
