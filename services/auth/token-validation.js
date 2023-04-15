@@ -3,9 +3,9 @@ const {getUserByEmail, createNewUser, updateUser} = require("../../db/db-user-in
 const cloudWatchLogger = require('../log/cloudwatch');
 
 const verifier = CognitoJwtVerifier.create({
-    userPoolId: 'us-east-1_53MSxTr53',
+    userPoolId: process.env.COGNITO_USER_POOL,
     tokenUse: 'id',
-    clientId: '6t7iieu7iapoadjqj20di1j33h',
+    clientId: process.env.COGNITO_CLIENTID,
 });
 
 async function isValidToken(header) {
