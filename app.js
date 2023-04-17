@@ -6,6 +6,7 @@ const xray = require('aws-xray-sdk');
 const cors = require('cors');
 const cloudWatchLogger = require('./services/log/cloudwatch');
 const tokenValidator = require('./services/auth/token-validation');
+const tableCreator = require('./db/db-tables');
 
 const indexRouter = require('./routes/index');
 const userSettingsRouter = require('./routes/user-settings');
@@ -19,6 +20,7 @@ const app = express();
 const port = process.env['NODE_PORT'] || 3000;
 
 cloudWatchLogger.initializeLogger();
+tableCreator.createAllTables();
 
 app.use(async (req, res, next) => {
   if (req.method !== "OPTIONS") {
