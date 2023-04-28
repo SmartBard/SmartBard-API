@@ -14,14 +14,14 @@ async function getAnnouncements(cols, vals) {
         for (let i = 0; i < cols.length; i++) {
             if (cols[i] === 'datefrom') {
                 if (vals[i] === null) {
-                    text += 'datefrom > now()'
+                    text += 'datefrom < now()'
                 } else {
                     text += `datefrom > $${argNum}`;
                     argNum += 1;
                 }
             } else if (cols[i] === 'dateto') {
                 if (vals[i] === null) {
-                    text += 'dateto < now()'
+                    text += 'dateto > now()'
                 } else {
                     text += `dateto < $${argNum}`;
                     argNum += 1;

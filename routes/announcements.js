@@ -43,8 +43,9 @@ const {
 const {getUserByEmail} = require("../db/db-user-interface");
 
 //temp values
-var s3Object = createS3Object(process.env.AWS_ACCESS_KEY_ID, process.env.AWS_SECRET_ACCESS_KEY);
-const s3Bucket = 'arn:aws:s3:us-east-1:013130384093:accesspoint/smbd-test-point';
+var s3Object = createS3Object(process.env.AWS_ACCESS_KEY_ID, process.env.AWS_SECRET_ACCESS_KEY, process.env.AWS_REGION);
+const s3Bucket = process.env.S3_IMAGE_ACCESS_POINT;
+const imageBaseUrl = process.env.S3_IMAGE_BASE_URL;
 
 // get endpoint for all announcements
 router.get('/', async function(req, res, next) {
@@ -140,7 +141,7 @@ router.post('/', async function(req, res, next) {
     // Updating Database
     const changeTime = new Date(Date.now()).toISOString();
     const status = "requested";
-    const mediaS3Path = mediaKey.length > 0 ? `${s3Bucket}/${mediaKey}` : '';
+    const mediaS3Path = mediaKey.length > 0 ? `${imageBaseUrl}/${mediaKey}` : '';
     const vals = [req.body.title, req.body.body, mediaS3Path, req.body.datefrom, req.body.dateto, userId, status, req.body.priority, changeTime, userId, changeTime];
     await createAnnouncement(vals).then(async (query) => {
         await logAction(status, query.rows[0].announcementid, userId);
@@ -257,7 +258,7 @@ router.put('/:announcementId', async function(req, res, next) {
         await uploadObjectToS3(s3Object, s3Bucket, mediaKey, req.body.media).then(async () => {
             responseBody['Upload New Media'] = 'Success';
             fs.rmSync(path.join(process.cwd(), mediaKey));
-            await updateAnnouncement('media', `${s3Bucket}/${mediaKey}`, req.params.announcementId);
+            await updateAnnouncement('media', `${imageBaseUrl}/${mediaKey}`, req.params.announcementId);
         }).catch((err) => {
             uploadSuccess = false;
             responseBody['Upload New Media'] = 'Failed';

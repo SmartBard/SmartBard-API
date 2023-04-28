@@ -2,9 +2,9 @@ var AWS = require('aws-sdk');
 var fs = require('fs');
 const path = require('path');
 
-function createS3Object(accessToken, secretKey) {
+function createS3Object(accessToken, secretKey, region) {
     AWS.config.update({
-        region: 'us-east-1',
+        region: region,
         endpoint: 'https://s3.amazonaws.com'
     });
 
