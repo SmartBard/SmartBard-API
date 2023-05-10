@@ -2,6 +2,7 @@ const express = require('express');
 const multer = require('multer');
 const path = require('path');
 const crypto = require('crypto');
+const fs = require('fs');
 
 const router = express.Router();
 
@@ -35,6 +36,15 @@ const upload = multer({
 }).single("file");
 
 router.post('/', async function(req, res, next) {
+    const currentFiles = fs.readdirSync('uploaded-assets/media');
+    for (const f of currentFiles) {
+        const fileName = `uploaded-assets/media/${f}`;
+        const stat = fs.statSync(fileName);
+        // remove uploaded files that haven't been touched in 2 mins
+        if (new Date() - new Date(stat.mtime) > 2 * 60 * 1000) {
+            fs.rmSync(fileName);
+        }
+    }
     upload(req, res, (err) => {
         if (err) {
             res.status(500).send({ error: 'Unknown error.' });
