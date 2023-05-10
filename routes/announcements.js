@@ -103,6 +103,19 @@ router.post('/', async function(req, res, next) {
         }
     }
 
+    if (req.body.title.length > 120 || req.body.title.length < 1 || !/^[a-zA-Z]([\w -]*[a-zA-Z])?/.test(req.body.title)) {
+        res.status(400).send({error: 'Title validation failed.'});
+        return;
+    }
+    if (req.body.body.length > 560 || req.body.body.length < 1 || !/^[a-zA-Z]([\w -]*[a-zA-Z])?/.test(req.body.body)) {
+        res.status(400).send({error: 'Body validation failed.'});
+        return;
+    }
+    if (!isDate(req.body.datefrom) || !isDate(req.body.dateto) || new Date(req.body.datefrom) > new Date(req.body.dateto)) {
+        res.status(400).send({error: 'Date validation failed'});
+        return;
+    }
+
     let s3Success = true;
     let dbSuccess = true;
 
@@ -232,6 +245,39 @@ router.put('/:announcementId', async function(req, res, next) {
 
     if (announcement == null) {
         return;
+    }
+
+    if (req.body.hasOwnProperty('title')) {
+        if (req.body.title.length > 120 || req.body.title.length < 1 || !/^[a-zA-Z]([\w -]*[a-zA-Z])?/.test(req.body.title)) {
+            res.status(400).send({error: 'Title validation failed.'});
+            return;
+        }
+    }
+    if (req.body.hasOwnProperty('body')) {
+        if (req.body.body.length > 560 || req.body.body.length < 1 || !/^[a-zA-Z]([\w -]*[a-zA-Z])?/.test(req.body.body)) {
+            res.status(400).send({error: 'Body validation failed.'});
+            return;
+        }
+    }
+    if (req.body.hasOwnProperty('datefrom')) {
+        let currentDateTo = announcement.dateto;
+        if (req.body.hasOwnProperty('dateto')) {
+            currentDateTo = isDate(req.body.dateto) ? req.body.dateto : announcement.dateto;
+        }
+        if (!isDate(req.body.datefrom) || new Date(req.body.datefrom) > new Date(currentDateTo)) {
+            res.status(400).send({error: '"Date From" validation failed.'});
+            return;
+        }
+    }
+    if (req.body.hasOwnProperty('dateto')) {
+        let currentDateFrom = announcement.datefrom;
+        if (req.body.hasOwnProperty('datefrom')) {
+            currentDateFrom = isDate(req.body.datefrom) ? req.body.datefrom : announcement.datefrom;
+        }
+        if (!isDate(req.body.dateto) || new Date(currentDateFrom) > new Date(req.body.dateto)) {
+            res.status(400).send({error: '"Date To" validation failed.'});
+            return;
+        }
     }
 
     // validating request body
@@ -373,5 +419,21 @@ router.delete('/:announcementId', async function(req, res, next) {
         res.status(500).send(responseBody);
     }
 });
+
+function isDate(str) {
+    const splits = str.split('-');
+    if (splits.length != 3) {
+        return false;
+    }
+    if (splits[0].length != 4 || splits[1].length != 2 || splits[2].length != 2) {
+        return false;
+    }
+    for (const s in splits) {
+        if (!/^\d+$/.test(s)) {
+            return false;
+        }
+    }
+    return true;
+}
 
 module.exports = router;
