@@ -5,6 +5,9 @@ const crypto = require('crypto');
 
 const router = express.Router();
 
+const MAX_FILE_SIZE = 10485760;
+const ALLOWED_FILE_EXTENSIONS = ['.png', '.jpeg', '.jpg', '.pdf', '.gif'];
+
 const storage = multer.diskStorage({
     destination: function (req, file, cb) {
         cb(null, 'uploaded-assets/media/')
@@ -14,7 +17,22 @@ const storage = multer.diskStorage({
     }
 })
 
-const upload = multer({ storage: storage }).single("file");
+const upload = multer({ 
+    storage: storage, 
+    limits: { 
+        fileSize: MAX_FILE_SIZE 
+    },
+    fileFilter: (req, file, cb) => {
+        if (!(ALLOWED_FILE_EXTENSIONS.includes(path.extname(file.originalname)))) {
+            return cb(new Error('File extension not allowed'));
+        }
+        const fileSize = parseInt(req.headers['content-length']);
+        if (fileSize > MAX_FILE_SIZE) {
+            return cb(new Error('Greater than max file size.'));
+        }
+        cb(null, true);
+    }
+}).single("file");
 
 router.post('/', async function(req, res, next) {
     upload(req, res, (err) => {
