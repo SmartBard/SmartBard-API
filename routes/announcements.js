@@ -194,6 +194,46 @@ router.put('/:announcementId', async function(req, res, next) {
     if (res.statusCode === 500) {
         return;
     }
+
+    const announcement = await getAnnouncements(['announcementid'], [req.params.announcementId]).then(async (query) => {
+        if (query.rows.length < 1) {
+            res.status(404).send({error: `Announcement with id ${req.params.announcementId} not found`});
+            return null;
+        } else {
+            // i am so sorry if someone has to maintain this validation
+            if (query.rows[0].userid !== userId) {
+                // only admins should be able to edit a post that is not theirs
+                if (await tokenValidator.isUserAdmin(req.header('Authorization').split(' ')[1])) {
+                    return query.rows[0];
+                } else {
+                    res.status(401).send({error: `You do not have permission to perform this action!`});
+                    return null;
+                }
+            } else {
+                // admins can do whatever they want to their own post
+                if (await tokenValidator.isUserAdmin(req.header('Authorization').split(' ')[1])) {
+                    return query.rows[0];
+                }
+                // stop users from approving their own posts
+                if (req.body.hasOwnProperty('status') && !await tokenValidator.isUserAdmin(req.header('Authorization').split(' ')[1])) {
+                    res.status(401).send({error: `You do not have permission to perform this action!`});
+                    return null;
+                } else {
+                    // dont allow users to edit posts that are already approved
+                    if (query.rows[0].status === 'approved') {
+                        res.status(401).send({error: `You do not have permission to perform this action!`});
+                        return null;
+                    }
+                    return query.rows[0];
+                }
+            }
+        }
+    });
+
+    if (announcement == null) {
+        return;
+    }
+
     // validating request body
     for (const prop in req.body) {
         if (req.body.hasOwnProperty(prop)) {
@@ -280,6 +320,11 @@ router.delete('/:announcementId', async function(req, res, next) {
     let responseBody = {};
     let s3Success = true;
     let dBSuccess = true;
+
+    if (!await tokenValidation.isUserAdmin(req.header('Authorization').split(' ')[1])) {
+        res.status(401).send({error: 'You do not have permission to perform this action!'});
+        return;
+    }
 
     // getting media associated with announcement
     let s3Path = '';
