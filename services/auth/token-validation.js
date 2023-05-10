@@ -60,7 +60,7 @@ async function initializeUserIfNotExist(jwtPayload) {
     const firstName = jwtPayload['given_name'];
     const lastName = jwtPayload['family_name'];
     const email = jwtPayload['email'];
-    const isAdmin = jwtPayload['cognito:groups'].includes('Admin');
+    const isAdmin = jwtPayload['cognito:groups'].includes('Admins');
     if (Object.keys(user).length < 1) {
         return await createNewUser([cognitoId, firstName, lastName, email, isAdmin]).then((query) => {
             return query.rows.length > 0;

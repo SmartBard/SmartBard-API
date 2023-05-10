@@ -3,8 +3,14 @@ const router = express.Router();
 
 const { retrieveLogPage } = require('../db/db-auditlog-interface');
 const cloudWatchLogger = require('../services/log/cloudwatch');
+const tokenValidator = require('../services/auth/token-validation');
 
 router.get('/', async function(req, res, next) {
+    if (!await tokenValidator.isUserAdmin(req.header('Authorization').split(' ')[1])) {
+        res.status(401).send({error: 'You do not have permission to perform this action!'});
+        return;
+    }
+
     let page = 0;
     if (req.query.hasOwnProperty("page")) {
         try {
