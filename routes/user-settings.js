@@ -7,6 +7,8 @@ const {
   deleteUserSettings,
 } = require('../db/db-user-settings-interface');
 const cloudWatchLogger = require('../services/log/cloudwatch');
+const tokenValidator = require('../services/auth/token-validation');
+const {getUserByEmail} = require("../db/db-user-interface");
 
 const POST_BODY_FORMAT = {
   "textsize": "number",
@@ -19,12 +21,33 @@ const POST_BODY_FORMAT = {
 }
 
 // get endpoint for user settings
-router.get('/:userId', async function(req, res, next) {
-  getUserSettings(req.params.userId).then((query) => {
+router.get('/', async function(req, res, next) {
+  const email = await tokenValidator.getUserEmailFromToken(req.header('Authorization').split(' ')[1]); // hardcoded but should be valid due to middleware
+  let userId = await getUserByEmail(email).then((query) => {
+      if (query.rows.length > 0) {
+          return query.rows[0].userid;
+      } else {
+          return "";
+      }
+  }).catch((err) => {
+      res.status(500).send({ error: 'Unknown error' });
+      cloudWatchLogger.logger.error(err);
+      console.log(err);
+      return "";
+  });
+  if (res.statusCode === 500) {
+      return;
+  }
+  getUserSettings(userId).then(async (query) => {
     if (query.rows.length > 0) {
       res.status(200).send(query.rows[0]);
     } else {
-      res.status(404).send({ error: `Did not find user settings for user ${req.params.userId}`});
+      const settings = await initializeUserSettings(userId);
+      if (settings != null) {
+        res.status(200).send(settings);
+      } else {
+        res.status(500).send({ error: 'Unknown error.' });
+      }
     }
   }).catch((err) => {
     cloudWatchLogger.logger.error(err);
@@ -32,39 +55,24 @@ router.get('/:userId', async function(req, res, next) {
   });
 });
 
-// post endpoint
-router.post('/', async function(req, res, next) {
-  for (const prop in POST_BODY_FORMAT) {
-    if (!(prop in req.body)) {
-      res.status(400).send({ error: `Did not find required property: ${prop}` });
-      return;
-    }
-    if (typeof req.body[prop] !== POST_BODY_FORMAT[prop]) {
-      res.status(400).send({ error: `Invalid type for property: ${prop}. Expected type: ${POST_BODY_FORMAT[prop]}` });
-      return;
-    }
-  }
-  const userId = `1`; // hardcoded for now
-  const values = [userId, req.body.textsize, req.body.brightness, req.body.contrast, req.body.volume, req.body.delay, req.body.primarycolor, req.body.secondarycolor];
-  getUserSettings(userId).then((query) => {
-    if (query.rows.length > 0) {
-      res.status(400).send({ error: `Settings already exist for user ${userId}` });
-    } else {
-      createUserSettings(values).then((query) => {
-        res.status(200).send({ settingsid: query.rows[0].settingsid });
-      }).catch((err) => {
-        cloudWatchLogger.logger.error(err);
-        res.status(500).send({ error: 'Unknown error.' });
-      });
-    }
+// put endpoint for creating or modifying
+router.put('/', async function(req, res, next) {
+  const email = await tokenValidator.getUserEmailFromToken(req.header('Authorization').split(' ')[1]); // hardcoded but should be valid due to middleware
+  let userId = await getUserByEmail(email).then((query) => {
+      if (query.rows.length > 0) {
+          return query.rows[0].userid;
+      } else {
+          return "";
+      }
   }).catch((err) => {
-    cloudWatchLogger.logger.error(err);
-    res.status(500).send({ error: 'Unknown error.' });
+      res.status(500).send({ error: 'Unknown error' });
+      cloudWatchLogger.logger.error(err);
+      console.log(err);
+      return "";
   });
-})
-
-// put endpoint
-router.put('/:userId', async function(req, res, next) {
+  if (res.statusCode === 500) {
+      return;
+  }
   for (const prop in req.body) {
     if (req.body.hasOwnProperty(prop)) {
       if (!(prop in POST_BODY_FORMAT)) {
@@ -76,7 +84,7 @@ router.put('/:userId', async function(req, res, next) {
         if (typeof req.body[prop] === 'string') {
           newValue = `'${req.body[prop]}'`;
         }
-        await updateUserSettings(prop, newValue, req.params.userId)
+        await updateUserSettings(prop, newValue, userId)
         .catch((err) => {
           cloudWatchLogger.logger.error(err);
           res.status(500).send({ error: 'Unknown error.' });
@@ -90,19 +98,13 @@ router.put('/:userId', async function(req, res, next) {
   res.status(200).send({ userid: req.params.userId, update: "success" });
 });
 
-// delete endpoint
-router.delete('/:userId', async function(req, res, next) {
-  deleteUserSettings(req.params.userId).then((query) => {
-    // console.log(query.rows);
-    if (query.rows.length < 1) {
-      res.status(404).send({ error: `User with id ${req.params.userId} not found` });
-    } else {
-      res.status(200).send({});
-    }
+async function initializeUserSettings(userId) {
+  return await createUserSettings([userId, 12, 100, 50, 10, 0, "#ABC123", "#123ABC"]).then((query) => {
+    return query.rows[0];
   }).catch((err) => {
     cloudWatchLogger.logger.error(err);
-    res.status(500).send({ error: 'Unknown error.'});
+    return null;
   });
-});
+}
 
 module.exports = router;
