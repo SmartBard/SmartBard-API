@@ -31,6 +31,16 @@ async function getUserEmailFromToken(token) {
     }
 }
 
+async function isUserAdmin(token) {
+    try {
+        const payload = await verifier.verify(token);
+        return payload['cognito:groups'].includes('Admins');
+    } catch (err) {
+        console.log(err);
+        return false;
+    }
+}
+
 async function initializeUserIfNotExist(jwtPayload) {
     const user = await getUserByEmail(jwtPayload.email).then((query) => {
         if (query.rows.length > 0) {
@@ -72,5 +82,6 @@ async function initializeUserIfNotExist(jwtPayload) {
 
 module.exports = {
     isValidToken,
-    getUserEmailFromToken
+    getUserEmailFromToken,
+    isUserAdmin
 }
