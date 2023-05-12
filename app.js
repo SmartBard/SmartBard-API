@@ -8,9 +8,7 @@ const cloudWatchLogger = require('./services/log/cloudwatch');
 const tokenValidator = require('./services/auth/token-validation');
 const tableCreator = require('./db/db-tables');
 
-const indexRouter = require('./routes/index');
 const userSettingsRouter = require('./routes/user-settings');
-const tempRouter = require('./routes/temp');
 const announcementsRouter = require('./routes/announcements');
 const auditLogRouter = require('./routes/auditlog');
 const assetsRouter = require('./routes/assets');
@@ -49,13 +47,11 @@ app.use((req, res, next) => {
   next();
 });
 
-app.use('/', indexRouter);
 app.use('/user-settings', userSettingsRouter);
 app.use('/announcements', announcementsRouter);
 app.use('/auditlog', auditLogRouter);
 app.use('/assets', assetsRouter);
 app.use('/users', usersRouter);
-app.use('/end', tempRouter);
 
 
 // catch 404 and forward to error handler
