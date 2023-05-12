@@ -3,6 +3,7 @@ const multer = require('multer');
 const path = require('path');
 const crypto = require('crypto');
 const fs = require('fs');
+const cloudWatchLogger = require('../services/log/cloudwatch');
 
 const router = express.Router();
 
@@ -47,6 +48,7 @@ router.post('/', async function(req, res, next) {
     }
     upload(req, res, (err) => {
         if (err) {
+            cloudWatchLogger.logger.error(err);
             res.status(500).send({ error: 'Unknown error.' });
         }
         if (res.statusCode !== 500) {
