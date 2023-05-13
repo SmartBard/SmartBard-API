@@ -11,6 +11,7 @@ const {
     updateAnnouncement,
     deleteAnnouncement
 } = require('../db/db-announcements-interface');
+
 const { removeLogsOfAnnouncement } = require('../db/db-auditlog-interface');
 const { logAction } = require('../services/log/auditlog');
 const cloudWatchLogger = require('../services/log/cloudwatch');

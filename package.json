@@ -3,7 +3,8 @@
   "version": "0.0.0",
   "private": true,
   "scripts": {
-    "start": "node app.js"
+    "start": "node app.js",
+    "test": "jest --coverage"
   },
   "dependencies": {
     "aws-jwt-verify": "^3.4.0",
@@ -21,5 +22,8 @@
     "util-deprecate": "^1.0.2",
     "winston": "^3.8.2",
     "winston-cloudwatch": "^6.1.1"
+  },
+  "devDependencies": {
+    "jest": "^29.5.0"
   }
 }
