@@ -16,4 +16,4 @@ jobs:
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: ${{ secrets.AWS_REGION }}
       - name: Deploy New Version # todo update when prod env is ready
-        run: "aws autoscaling start-instance-refresh --auto-scaling-group-name smbd-scaler --preferences '{\"InstanceWarmup\": 300, \"MinHealthyPercentage\": 50, \"SkipMatching\": false}'"
+        run: "aws autoscaling start-instance-refresh --auto-scaling-group-name smbd-scaler-prod --preferences '{\"InstanceWarmup\": 300, \"MinHealthyPercentage\": 50, \"SkipMatching\": false}'"
