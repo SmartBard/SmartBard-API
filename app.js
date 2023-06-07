@@ -33,7 +33,7 @@ app.use(async (req, res, next) => {
   }
 });
 app.use(cors({
-  origin: ['http://localhost:3000', 'https://dev.smartbard.durkin.app', 'https://prod.smartbard.durkin.app', 'https://smartbard.durkin.app', 'https://smbd-test.smartbard.durkin.app'],
+  origin: ['http://localhost:3000', 'https://dev.smartbard.durkin.app', 'https://prod.smartbard.durkin.app', 'https://smartbard.durkin.app', 'https://smbd-test.smartbard.durkin.app', 'https://smbd-prod.smartbard.durkin.app'],
   allowedHeaders: ['Content-Type', 'Authorization'],
   credentials: true
 }));
